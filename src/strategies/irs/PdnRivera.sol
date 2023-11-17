@@ -10,6 +10,7 @@ import "@openzeppelin/security/ReentrancyGuard.sol";
 import "@pancakeswap-v2-exchange-protocol/interfaces/IPancakeRouter02.sol";
 import "./OracleInterface/IPyth.sol";
 import "./interfaces/DataTypes.sol";
+import "./interfaces/IV3SwapRouter.sol";
 
 import "./interfaces/ILendingPool.sol";
 import "./interfaces/IRivera.sol";
@@ -34,6 +35,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     address public riveraVault;
     address public pyth;
     address public claimC;
+    uint24 public fees;
 
     uint256 public ltv;
     address public partner;
@@ -61,7 +63,8 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         uint256 _feeDecimals,
         address _claimC,
         uint256 _withdrawFee,
-        uint256 _withdrawFeeDecimals
+        uint256 _withdrawFeeDecimals,
+        uint24 _fees
     ) AbstractStrategy(_commonAddresses) {
         baseToken = _baseToken;
         wEth = _wEth;
@@ -79,6 +82,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         claimC = _claimC;
         withdrawFee = _withdrawFee;
         withdrawFeeDecimals = _withdrawFeeDecimals;
+        fees = _fees;
 
         DataTypes.ReserveData memory w = ILendingPool(lendingPool)
             .getReserveData(wEth);
@@ -115,7 +119,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
         borrowAave(amountEth);
         uint256 etV = IERC20(wEth).balanceOf(address(this));
-        swapTokens(wEth, baseToken, etV);
+        _swapV3In(wEth, baseToken, etV , fees);
         addLiquidity();
     }
 
@@ -138,21 +142,23 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         IRivera(riveraVault).deposit(tBal, address(this));
     }
 
-    function swapTokens(
-        address tokenA,
-        address tokenB,
-        uint256 amountIn
-    ) public {
-        address[] memory path = new address[](2);
-        path[0] = tokenA;
-        path[1] = tokenB;
-
-        IPancakeRouter02(router).swapExactTokensForTokens(
-            amountIn,
-            0,
-            path,
-            address(this),
-            block.timestamp
+     function _swapV3In(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint24 fee
+    ) public returns (uint256 amountOut) {
+        amountOut = IV3SwapRouter(router).exactInputSingle(
+            IV3SwapRouter.ExactInputSingleParams(
+                tokenIn,
+                tokenOut,
+                fee,
+                address(this),
+                block.timestamp * 2,
+                amountIn,
+                0,
+                0
+            )
         );
     }
 
@@ -232,7 +238,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         IRivera(riveraVault).withdraw(balA, address(this), address(this));
 
         uint256 balT = IERC20(baseToken).balanceOf(address(this));
-        swapTokens(baseToken, wEth, balT);
+        _swapV3In(baseToken, wEth, balT,fees);
 
         uint256 debtNow = IERC20(debtToken).balanceOf(address(this));
         repayLoan(debtNow);
@@ -240,13 +246,13 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         uint256 inAmount = IERC20(aToken).balanceOf(address(this));
         withdrawAave(inAmount);
         balT = IERC20(wEth).balanceOf(address(this));
-        swapTokens(wEth, baseToken, balT);
+        _swapV3In(wEth, baseToken, balT,fees);
     }
 
     function harvest() public whenNotPaused {
         IMultiFeeDistribution(claimC).getReward();
         uint256 lBal = IERC20(reward).balanceOf(address(this));
-        swapTokens(reward, baseToken, lBal);
+        _swapV3In(reward, baseToken, lBal,fees);
         _chargeFees(baseToken);
         _deposit();
     }
