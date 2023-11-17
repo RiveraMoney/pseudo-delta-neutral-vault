@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import {Ownable} from "@openzeppelin/access/Ownable.sol";
+import "@openzeppelin/access/Ownable.sol";
 
 abstract contract WhitelistFilter is Ownable {
 
