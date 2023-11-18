@@ -115,7 +115,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
             tBal,
             uint256(IERC20Metadata(baseToken).decimals())
         );
-        uint256 amountEth = tokenToEthConversion(borrowEth);
+        uint256 amountEth = StableToEthConversion(borrowEth);
 
         borrowAave(amountEth);
         uint256 etV = IERC20(wEth).balanceOf(address(this));
@@ -147,7 +147,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         address tokenOut,
         uint256 amountIn,
         uint24 fee
-    ) public returns (uint256 amountOut) {
+    ) internal returns (uint256 amountOut) {
         amountOut = IV3SwapRouter(router).exactInputSingle(
             IV3SwapRouter.ExactInputSingleParams(
                 tokenIn,
@@ -190,7 +190,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         ILendingPool(lendingPool).withdraw(baseToken, _amount, address(this));
     }
 
-    function tokenToEthConversion(
+    function StableToEthConversion(
         uint256 _amount
     ) public view returns (uint256) {
         uint256 ethPrice = uint256(
@@ -203,7 +203,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         return borrowEth;
     }
 
-    function ethToTokenConversion(
+    function ethToStableConversion(
         uint256 _amount
     ) public view returns (uint256) {
         uint256 ethPrice = uint256(
@@ -220,7 +220,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
     function reBalance() public {
         onlyManager();
-        // harvest();
+        harvest();
         closeAll();
         _deposit();
     }
@@ -232,7 +232,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         IERC20(baseToken).transfer(vault, totalBal);
     }
 
-    function closeAll() public {
+    function closeAll() internal {
         uint256 rBal = IRivera(riveraVault).balanceOf(address(this));
         uint256 balA = IRivera(riveraVault).convertToAssets(rBal);
         IRivera(riveraVault).withdraw(balA, address(this), address(this));
