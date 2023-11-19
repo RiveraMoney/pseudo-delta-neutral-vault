@@ -192,7 +192,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
     function StableToTokenConversion(
         uint256 _amount
-    ) public view returns (uint256) {
+    ) internal view returns (uint256) {
         uint256 tokenPrice = uint256(
             int256(IPyth(pyth).getPriceUnsafe(pId).price)
         );
@@ -205,7 +205,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
     function tokenToStableConversion(
         uint256 _amount
-    ) public view returns (uint256) {
+    ) internal view returns (uint256) {
         uint256 tokenPrice = uint256(
             int256(IPyth(pyth).getPriceUnsafe(pId).price)
         );
