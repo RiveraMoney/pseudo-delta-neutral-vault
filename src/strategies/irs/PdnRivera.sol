@@ -25,7 +25,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address public baseToken;
-    address public wEth;
+    address public tokenB;
     address public debtToken;
     address public aToken;
     address public reward;
@@ -49,7 +49,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     constructor(
         CommonAddresses memory _commonAddresses,
         address _baseToken,
-        address _wEth,
+        address _tokenB,
         address _reward,
         address _partner,
         address _lendigPool,
@@ -67,7 +67,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         uint24 _fees
     ) AbstractStrategy(_commonAddresses) {
         baseToken = _baseToken;
-        wEth = _wEth;
+        tokenB = _tokenB;
         reward = _reward;
         partner = _partner;
         protocolFee = _protocolFee;
@@ -85,7 +85,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         fees = _fees;
 
         DataTypes.ReserveData memory w = ILendingPool(lendingPool)
-            .getReserveData(wEth);
+            .getReserveData(tokenB);
         DataTypes.ReserveData memory t = ILendingPool(lendingPool)
             .getReserveData(baseToken);
         aToken = t.aTokenAddress;
@@ -110,16 +110,16 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
         depositAave(lendLendle);
 
-        uint256 borrowEth = LiquiMaths.calculateBorrow(
+        uint256 borrowTokenB = LiquiMaths.calculateBorrow(
             ltv,
             tBal,
             uint256(IERC20Metadata(baseToken).decimals())
         );
-        uint256 amountEth = StableToEthConversion(borrowEth);
+        uint256 amounTokenB = StableToTokenConversion(borrowTokenB);
 
-        borrowAave(amountEth);
-        uint256 etV = IERC20(wEth).balanceOf(address(this));
-        _swapV3In(wEth, baseToken, etV , fees);
+        borrowAave(amounTokenB);
+        uint256 etV = IERC20(tokenB).balanceOf(address(this));
+        _swapV3In(tokenB, baseToken, etV , fees);
         addLiquidity();
     }
 
@@ -129,7 +129,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
     function borrowAave(uint256 _borrowAmount) internal {
         ILendingPool(lendingPool).borrow(
-            wEth,
+            tokenB,
             _borrowAmount,
             2,
             0,
@@ -183,39 +183,39 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     }
 
     function repayLoan(uint256 _amount) internal {
-        ILendingPool(lendingPool).repay(wEth, _amount, 2, address(this));
+        ILendingPool(lendingPool).repay(tokenB, _amount, 2, address(this));
     }
 
     function withdrawAave(uint256 _amount) internal {
         ILendingPool(lendingPool).withdraw(baseToken, _amount, address(this));
     }
 
-    function StableToEthConversion(
+    function StableToTokenConversion(
         uint256 _amount
     ) public view returns (uint256) {
-        uint256 ethPrice = uint256(
+        uint256 tokenPrice = uint256(
             int256(IPyth(pyth).getPriceUnsafe(pId).price)
         );
-        uint256 weiU = (1e18 * 1e8) / (ethPrice);
+        uint256 weiU = (1e18 * 1e8) / (tokenPrice);
         uint256 deci = IERC20Metadata(baseToken).decimals();
-        uint256 borrowEth = (weiU * _amount) / 10 ** deci;
+        uint256 amountInToken = (weiU * _amount) / 10 ** deci;
 
-        return borrowEth;
+        return amountInToken;
     }
 
-    function ethToStableConversion(
+    function tokenToStableConversion(
         uint256 _amount
     ) public view returns (uint256) {
-        uint256 ethPrice = uint256(
+        uint256 tokenPrice = uint256(
             int256(IPyth(pyth).getPriceUnsafe(pId).price)
         );
 
-        uint256 weiU = (1e18 * 1e8) / (ethPrice);
+        uint256 weiU = (1e18 * 1e8) / (tokenPrice);
 
         uint256 deci = IERC20Metadata(baseToken).decimals();
 
-        uint256 pUsdc = (_amount * 10 ** deci) / weiU;
-        return pUsdc;
+        uint256 amountInStable = (_amount * 10 ** deci) / weiU;
+        return amountInStable;
     }
 
     function reBalance() public {
@@ -238,15 +238,15 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         IRivera(riveraVault).withdraw(balA, address(this), address(this));
 
         uint256 balT = IERC20(baseToken).balanceOf(address(this));
-        _swapV3In(baseToken, wEth, balT,fees);
+        _swapV3In(baseToken, tokenB, balT,fees);
 
         uint256 debtNow = IERC20(debtToken).balanceOf(address(this));
         repayLoan(debtNow);
 
         uint256 inAmount = IERC20(aToken).balanceOf(address(this));
         withdrawAave(inAmount);
-        balT = IERC20(wEth).balanceOf(address(this));
-        _swapV3In(wEth, baseToken, balT,fees);
+        balT = IERC20(tokenB).balanceOf(address(this));
+        _swapV3In(tokenB, baseToken, balT,fees);
     }
 
     function harvest() public whenNotPaused {
@@ -272,7 +272,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
     function totalDebt() public view returns (uint256) {
         uint256 debt = IERC20(debtToken).balanceOf(address(this));
-        return ethToTokenConversion(debt);
+        return tokenToStableConversion(debt);
     }
 
     function inCaseTokensGetStuck(address _token) external {
@@ -322,9 +322,9 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         IERC20(baseToken).approve(lendingPool, type(uint256).max);
         IERC20(baseToken).approve(riveraVault, type(uint256).max);
 
-        IERC20(wEth).approve(router, type(uint256).max);
-        IERC20(wEth).approve(lendingPool, type(uint256).max);
-        IERC20(wEth).approve(riveraVault, type(uint256).max);
+        IERC20(tokenB).approve(router, type(uint256).max);
+        IERC20(tokenB).approve(lendingPool, type(uint256).max);
+        IERC20(tokenB).approve(riveraVault, type(uint256).max);
     }
 
     function _removeAllowances() internal virtual {
@@ -332,8 +332,8 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         IERC20(baseToken).safeApprove(lendingPool, 0);
         IERC20(baseToken).safeApprove(riveraVault, 0);
 
-        IERC20(wEth).safeApprove(router, 0);
-        IERC20(wEth).safeApprove(lendingPool, 0);
-        IERC20(wEth).safeApprove(riveraVault, 0);
+        IERC20(tokenB).safeApprove(router, 0);
+        IERC20(tokenB).safeApprove(lendingPool, 0);
+        IERC20(tokenB).safeApprove(riveraVault, 0);
     }
 }
