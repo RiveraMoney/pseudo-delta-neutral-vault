@@ -21,8 +21,31 @@ import "../../libs/LiquiMaths.sol";
 import "../common/AbstractStrategy.sol";
 import "../utils/StringUtils.sol";
 
+  struct PdnParams{     
+    address  baseToken;
+    address  tokenB;
+    address  reward;
+    address  lendingPool;
+    address  riveraVault;
+    address  claimC;
+    address  pyth;
+    bytes32  pId;
+    uint256  ltv;
+    }
+
+    struct PdnFeesParams{
+    address  partner;
+    uint256  protocolFee;
+    uint256  partnerFee;
+    uint256  fundManagerFee;
+    uint256  feeDecimals;
+    uint256  withdrawFee;
+    uint256  withdrawFeeDecimals;
+    }
+
 contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     using SafeERC20 for IERC20;
+
 
     address public baseToken;
     address public tokenB;
@@ -47,41 +70,27 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     uint256 public withdrawFeeDecimals;
 
     constructor(
-        CommonAddresses memory _commonAddresses,
-        address _baseToken,
-        address _tokenB,
-        address _reward,
-        address _partner,
-        address _lendigPool,
-        address _riveraVault,
-        address _pyth,
-        uint256 _ltv,
-        bytes32 _id,
-        uint256 _protocolFee,
-        uint256 _partnerFee,
-        uint256 _fundManagerFee,
-        uint256 _feeDecimals,
-        address _claimC,
-        uint256 _withdrawFee,
-        uint256 _withdrawFeeDecimals,
-        uint24 _fees
+       CommonAddresses memory _commonAddresses,
+       PdnParams memory _PdnParams,
+       PdnFeesParams memory _PdnFeesParams,
+       uint24 _fees
     ) AbstractStrategy(_commonAddresses) {
-        baseToken = _baseToken;
-        tokenB = _tokenB;
-        reward = _reward;
-        partner = _partner;
-        protocolFee = _protocolFee;
-        partnerFee = _partnerFee;
-        fundManagerFee = _fundManagerFee;
-        feeDecimals = _feeDecimals;
-        lendingPool = _lendigPool;
-        riveraVault = _riveraVault;
-        pyth = _pyth;
-        pId = _id;
-        ltv = _ltv;
-        claimC = _claimC;
-        withdrawFee = _withdrawFee;
-        withdrawFeeDecimals = _withdrawFeeDecimals;
+        baseToken = _PdnParams.baseToken;
+        tokenB = _PdnParams.tokenB;
+        reward = _PdnParams.reward;
+        partner = _PdnFeesParams.partner;
+        protocolFee = _PdnFeesParams.protocolFee;
+        partnerFee = _PdnFeesParams.partnerFee;
+        fundManagerFee = _PdnFeesParams.fundManagerFee;
+        feeDecimals = _PdnFeesParams.feeDecimals;
+        lendingPool = _PdnParams.lendingPool;
+        riveraVault = _PdnParams.riveraVault;
+        pyth = _PdnParams.pyth;
+        pId = _PdnParams.pId;
+        ltv = _PdnParams.ltv;
+        claimC = _PdnParams.claimC;
+        withdrawFee = _PdnFeesParams.withdrawFee;
+        withdrawFeeDecimals = _PdnFeesParams.withdrawFeeDecimals;
         fees = _fees;
 
         DataTypes.ReserveData memory w = ILendingPool(lendingPool)
@@ -196,7 +205,9 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         uint256 tokenPrice = uint256(
             int256(IPyth(pyth).getPriceUnsafe(pId).price)
         );
-        uint256 weiU = (1e18 * 1e8) / (tokenPrice);
+
+        uint256 deciL = IERC20Metadata(tokenB).decimals();
+        uint256 weiU = (10 ** deciL * 1e8) / (tokenPrice);
         uint256 deci = IERC20Metadata(baseToken).decimals();
         uint256 amountInToken = (weiU * _amount) / 10 ** deci;
 
@@ -210,7 +221,9 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
             int256(IPyth(pyth).getPriceUnsafe(pId).price)
         );
 
-        uint256 weiU = (1e18 * 1e8) / (tokenPrice);
+        uint256 deciL = IERC20Metadata(tokenB).decimals();
+
+        uint256 weiU = (10 ** deciL * 1e8) / (tokenPrice);
 
         uint256 deci = IERC20Metadata(baseToken).decimals();
 
