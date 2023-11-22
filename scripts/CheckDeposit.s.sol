@@ -3,18 +3,17 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
-import "../src/strategies/irs/CommonStrat.sol";
+import "../src/strategies/common/AbstractStrategy.sol";
 import "../src/vaults/RiveraAutoCompoundingVaultV2Public.sol";
-import "../src/strategies/irs/LendleRivera.sol";
-import "../src/strategies/irs/interfaces/ILendleRivera.sol";
+import "../src/strategies/irs/PdnRivera.sol";
 import "../src/strategies/common/interfaces/IStrategy.sol";
 
 import "./Weth.sol";
 import "@pancakeswap-v2-exchange-protocol/interfaces/IPancakeRouter02.sol";
 
 contract CheckDeposit is Script {
-    address public vault = 0x33e47Fe37FeF6AB1d83e54AAD6c8D01C048171E1;
-    address public strategy = 0x8a1b62c438B7b1d73A7a323C6b685fEc021610aC;
+    address public vault = 0x8a1b62c438B7b1d73A7a323C6b685fEc021610aC;
+    address public strategy = 0xf5eB7A02d1B8Dc14D5419Ee9F3f4DeE342960e08;
     address public token = 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9;
 
     function setUp() public {}
@@ -24,7 +23,7 @@ contract CheckDeposit is Script {
         address acc = vm.addr(privateKey);
         console.log("Account", acc);
 
-        uint256 dpDai = 10 * (10 ** 6);
+        uint256 dpDai = 1e7;
 
         vm.startBroadcast(privateKey);
 

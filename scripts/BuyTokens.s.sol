@@ -3,12 +3,10 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
-import "../src/strategies/irs/CommonStrat.sol";
+import "../src/strategies/common/AbstractStrategy.sol";
 import "../src/vaults/RiveraAutoCompoundingVaultV2Public.sol";
-import "../src/strategies/irs/LendleRivera.sol";
-import "../src/strategies/irs/interfaces/ILendleRivera.sol";
+import "../src/strategies/irs/PdnRivera.sol";
 import "../src/strategies/common/interfaces/IStrategy.sol";
-import "../src/strategies/irs/interfaces/IV3SwapRouter.sol";
 
 import "./Weth.sol";
 
