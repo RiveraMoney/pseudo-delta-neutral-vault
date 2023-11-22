@@ -24,16 +24,15 @@ import "../utils/StringUtils.sol";
   struct PdnParams{     
     address  baseToken;
     address  tokenB;
-    address  reward;
     address  lendingPool;
     address  riveraVault;
-    address  claimC;
     address  pyth;
     bytes32  pId;
     uint256  ltv;
     }
 
     struct PdnFeesParams{
+    address protocol;
     address  partner;
     uint256  protocolFee;
     uint256  partnerFee;
@@ -43,12 +42,20 @@ import "../utils/StringUtils.sol";
     uint256  withdrawFeeDecimals;
     }
 
+    struct PdnHarvestParams {
+        address reward;
+        address claimC;
+        address multiFee;
+        address routerH;
+    }
+
 contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
 
     address public baseToken;
     address public tokenB;
+    address public midToken;
     address public debtToken;
     address public aToken;
     address public reward;
@@ -58,9 +65,12 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     address public riveraVault;
     address public pyth;
     address public claimC;
+    address public multiFee;
+    address public routerH;
     uint24 public fees;
 
     uint256 public ltv;
+    address public protocol;
     address public partner;
     uint256 public protocolFee;
     uint256 public partnerFee;
@@ -69,28 +79,50 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     uint256 public withdrawFee;
     uint256 public withdrawFeeDecimals;
 
+    address[] public forReward = [
+        0xF36AFb467D1f05541d998BBBcd5F7167D67bd8fC,
+        0x334a542b51212b8Bcd6F96EfD718D55A9b7D1c35,
+        0xE71cbaaa6B093FcE66211E6f218780685077D8B5,
+        0xaC3c14071c80819113DF501E1AB767be910d5e5a,
+        0x44CCCBbD7A5A9e2202076ea80C185DA0058f1715,
+        0x42f9F9202D5F4412148662Cf3bC68D704c8E354f,
+        0x787Cb0D29194f0fAcA73884C383CF4d2501bb874,
+        0x5DF9a4BE4F9D717b2bFEce9eC350DcF4cbCb91d8,
+        0x683696523512636B46A826A7e3D1B0658E8e2e1c,
+        0x18d3E4F9951fedcdDD806538857eBED2F5F423B7
+    ];
+
     constructor(
        CommonAddresses memory _commonAddresses,
        PdnParams memory _PdnParams,
        PdnFeesParams memory _PdnFeesParams,
+       PdnHarvestParams memory _PdnHarvestParams,
+       address _midToken,
        uint24 _fees
     ) AbstractStrategy(_commonAddresses) {
+
         baseToken = _PdnParams.baseToken;
         tokenB = _PdnParams.tokenB;
-        reward = _PdnParams.reward;
-        partner = _PdnFeesParams.partner;
-        protocolFee = _PdnFeesParams.protocolFee;
-        partnerFee = _PdnFeesParams.partnerFee;
-        fundManagerFee = _PdnFeesParams.fundManagerFee;
-        feeDecimals = _PdnFeesParams.feeDecimals;
         lendingPool = _PdnParams.lendingPool;
         riveraVault = _PdnParams.riveraVault;
         pyth = _PdnParams.pyth;
         pId = _PdnParams.pId;
         ltv = _PdnParams.ltv;
-        claimC = _PdnParams.claimC;
+
+        partner = _PdnFeesParams.partner;
+        protocol = _PdnFeesParams.protocol;
+        protocolFee = _PdnFeesParams.protocolFee;
+        partnerFee = _PdnFeesParams.partnerFee;
+        fundManagerFee = _PdnFeesParams.fundManagerFee;
+        feeDecimals = _PdnFeesParams.feeDecimals;
         withdrawFee = _PdnFeesParams.withdrawFee;
         withdrawFeeDecimals = _PdnFeesParams.withdrawFeeDecimals;
+
+        reward = _PdnHarvestParams.reward;
+        claimC = _PdnHarvestParams.claimC;
+        multiFee = _PdnHarvestParams.multiFee;
+        routerH = _PdnHarvestParams.routerH;
+        midToken = _midToken;
         fees = _fees;
 
         DataTypes.ReserveData memory w = ILendingPool(lendingPool)
@@ -111,13 +143,13 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     function _deposit() internal {
         uint256 tBal = IERC20(baseToken).balanceOf(address(this));
 
-        uint256 lendLendle = LiquiMaths.calculateLend(
+        uint256 lendAmount = LiquiMaths.calculateLend(
             ltv,
             tBal,
             uint256(IERC20Metadata(baseToken).decimals())
         );
 
-        depositAave(lendLendle);
+        depositAave(lendAmount);
 
         uint256 borrowTokenB = LiquiMaths.calculateBorrow(
             ltv,
@@ -171,6 +203,20 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         );
     }
 
+      function _swapV2(address tokenA, address tokenc, uint256 _amount) internal {
+        address[] memory path = new address[](2);
+        path[0] = tokenA;
+        path[1] = tokenc;
+
+        IPancakeRouter02(routerH).swapExactTokensForTokens(
+            _amount,
+            0,
+            path,
+            address(this),
+            block.timestamp * 2
+        );
+    }
+
     function withdraw(uint256 _amount) public nonReentrant {
         onlyVault();
 
@@ -178,7 +224,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
         uint256 wFee = (_amount * withdrawFee) / withdrawFeeDecimals;
         IERC20(baseToken).transfer(
-            0xdA2C794f2d2D8aaC0f5C1da3BD3B2C7914D9C4d7,
+            protocol,
             wFee
         );
         uint256 toTrans = _amount - wFee;
@@ -263,9 +309,14 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     }
 
     function harvest() public whenNotPaused {
-        IMultiFeeDistribution(claimC).getReward();
+        IMultiFeeDistribution(claimC).claim(address(this), forReward);
+        (uint256 amount, uint256 penalty) = IMultiFeeDistribution(multiFee)
+            .withdrawableBalance(address(this));
+        IMultiFeeDistribution(multiFee).withdraw((amount * 99) / 100);
         uint256 lBal = IERC20(reward).balanceOf(address(this));
-        _swapV3In(reward, baseToken, lBal,fees);
+        _swapV2(reward, midToken, lBal);
+        uint256 mBal = IERC20(midToken).balanceOf(address(this));
+        _swapV3In(midToken, baseToken, mBal, fees);
         _chargeFees(baseToken);
         _deposit();
     }
@@ -332,12 +383,24 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
     function _giveAllowances() internal virtual {
         IERC20(baseToken).approve(router, type(uint256).max);
+        IERC20(baseToken).approve(routerH, type(uint256).max);
         IERC20(baseToken).approve(lendingPool, type(uint256).max);
         IERC20(baseToken).approve(riveraVault, type(uint256).max);
 
         IERC20(tokenB).approve(router, type(uint256).max);
+        IERC20(tokenB).approve(routerH, type(uint256).max);
         IERC20(tokenB).approve(lendingPool, type(uint256).max);
         IERC20(tokenB).approve(riveraVault, type(uint256).max);
+
+        IERC20(reward).approve(router, type(uint256).max);
+        IERC20(reward).approve(routerH, type(uint256).max);
+        IERC20(reward).approve(lendingPool, type(uint256).max);
+        IERC20(reward).approve(riveraVault, type(uint256).max);
+        
+        IERC20(midToken).approve(router, type(uint256).max);
+        IERC20(midToken).approve(routerH, type(uint256).max);
+        IERC20(midToken).approve(lendingPool, type(uint256).max);
+        IERC20(midToken).approve(riveraVault, type(uint256).max);
     }
 
     function _removeAllowances() internal virtual {

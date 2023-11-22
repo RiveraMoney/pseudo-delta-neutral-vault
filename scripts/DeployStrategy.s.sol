@@ -23,11 +23,14 @@ contract deployRivera is Script {
 
     address public lendingPool = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3; // mantle  main net
     address public riveraVault = 0x5f247B216E46fD86A09dfAB377d9DBe62E9dECDA; //rivera agni mantle
-    address public router = 0x319B69888b0d11cEC22caA5034e25FfFBDc88421; // fusionX v3
+    address public router = 0x319B69888b0d11cEC22caA5034e25FfFBDc88421; // agnifinance v3
     address public pyth = 0xA2aa501b19aff244D90cc15a4Cf739D2725B5729; // on mantle
     address public multiFeeD = 0x5C75A733656c3E42E44AFFf1aCa1913611F49230; //Lendle Contract to collect fees
+    address public masterCh = 0x79e2fd1c484EB9EE45001A98Ce31F28918F27C41;
+    address public routerH = 0xDd0840118bF9CCCc6d67b2944ddDfbdb995955FD; // fusionx v2
 
     address public partner = 0xFaBcc4b22fFEa25D01AC23c5d225D7B27CB1B6B8; // my address
+    address public protocol = 0xf12Ac6acb0B8542B1c717E520A5B4C085222e4b9;
     uint256 public protocolFee = 0;
     uint256 public partnerFee = 0;
     uint256 public fundManagerFee = 0;
@@ -64,18 +67,18 @@ contract deployRivera is Script {
             router
         );
         
-        PdnParams memory _pdnParams = PdnParams(token , 
+        PdnParams memory _pdnParams = PdnParams(
+        token, 
         wEth,
-        lendle,
         lendingPool,
         riveraVault,
-        multiFeeD,
         pyth,
         pId,
         ltv
         );
 
         PdnFeesParams memory _pdnFeesParams = PdnFeesParams(
+            protocol,
             partner,
             protocolFee,
             partnerFee,
@@ -85,11 +88,20 @@ contract deployRivera is Script {
             withdrawFeeDecimals
             );
 
+         PdnHarvestParams memory _pdnHarvestParams = PdnHarvestParams (
+         lendle,
+         masterCh,
+         multiFeeD,
+         routerH
+         );
+
 
         PdnRivera parentStrategy = new PdnRivera(
             _commonAddresses,
            _pdnParams,
            _pdnFeesParams,
+           _pdnHarvestParams,
+           wMnt,
            poolFee 
         );
 
