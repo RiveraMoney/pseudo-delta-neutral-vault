@@ -21,55 +21,56 @@ import "../../libs/LiquiMaths.sol";
 import "../common/AbstractStrategy.sol";
 import "../utils/StringUtils.sol";
 
-  struct PdnParams{     
-    address  baseToken;
-    address  tokenB;
-    address  lendingPool;
-    address  riveraVault;
-    address  pyth;
-    bytes32  pId;
-    uint256  ltv;
-    }
+//Main variables of Contract
+struct PdnParams {
+    address baseToken;
+    address tokenB;
+    address lendingPool;
+    address riveraVault;
+    address pyth;
+    bytes32 pId;
+    uint256 ltv;
+}
 
-    struct PdnFeesParams{
+//Variables for Fees
+struct PdnFeesParams {
     address protocol;
-    address  partner;
-    uint256  protocolFee;
-    uint256  partnerFee;
-    uint256  fundManagerFee;
-    uint256  feeDecimals;
-    uint256  withdrawFee;
-    uint256  withdrawFeeDecimals;
-    }
+    address partner;
+    uint256 protocolFee;
+    uint256 partnerFee;
+    uint256 fundManagerFee;
+    uint256 feeDecimals;
+    uint256 withdrawFee;
+    uint256 withdrawFeeDecimals;
+}
 
-    struct PdnHarvestParams {
-        address reward;
-        address claimC;
-        address multiFee;
-        address routerH;
-    }
+//Protocol dependent parameters for harvest function
+struct PdnHarvestParams {
+    address reward;
+    address claimC;
+    address multiFee;
+    address routerH;
+}
 
 contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-
     address public baseToken;
-    address public tokenB;
-    address public midToken;
+    address public tokenB; //token we are going to borrow
+    address public midToken; //midtoken incase there is slippage issue for a pair
     address public debtToken;
     address public aToken;
-    address public reward;
-    uint256 public oracleDeci;
-    bytes32 public pId;
-
+    address public reward; // token we get for depositing tokens
+    uint256 public oracleDeci; // decimals of oracle price
+    bytes32 public pId; // id of a token to get its price from oracle
 
     address public lendingPool;
     address public riveraVault;
-    address public pyth;
-    address public claimC;
-    address public multiFee;
-    address public routerH;
-    uint24 public poolFees;
+    address public pyth; //oracle contract address to get price
+    address public claimC; // contract to collect reward tokens
+    address public multiFee; // contract to withdraw reward tokens
+    address public routerH; //secondary router incase not enough liquidity in v3 pools
+    uint24 public poolFees; //v3 pool fees for v3 swap
 
     uint256 public ltv;
     address public protocol;
@@ -81,6 +82,10 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     uint256 public withdrawFee;
     uint256 public withdrawFeeDecimals;
 
+    /*@dev
+following is an array of tokens to collect deposit reward from protocol
+will change for different protocols
+  */
     address[] public forReward = [
         0xF36AFb467D1f05541d998BBBcd5F7167D67bd8fC,
         0x334a542b51212b8Bcd6F96EfD718D55A9b7D1c35,
@@ -95,15 +100,14 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     ];
 
     constructor(
-       CommonAddresses memory _commonAddresses,
-       PdnParams memory _PdnParams,
-       PdnFeesParams memory _PdnFeesParams,
-       PdnHarvestParams memory _PdnHarvestParams,
-       address _midToken,
-       uint24 _poolFees,
-       uint256 _oracleDeci
+        CommonAddresses memory _commonAddresses,
+        PdnParams memory _PdnParams,
+        PdnFeesParams memory _PdnFeesParams,
+        PdnHarvestParams memory _PdnHarvestParams,
+        address _midToken,
+        uint24 _poolFees,
+        uint256 _oracleDeci
     ) AbstractStrategy(_commonAddresses) {
-
         baseToken = _PdnParams.baseToken;
         tokenB = _PdnParams.tokenB;
         lendingPool = _PdnParams.lendingPool;
@@ -130,6 +134,9 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         poolFees = _poolFees;
         oracleDeci = _oracleDeci;
 
+        /* @dev
+    Fetching both aToken address and debt token address from protocol
+    */
         DataTypes.ReserveData memory w = ILendingPool(lendingPool)
             .getReserveData(tokenB);
         DataTypes.ReserveData memory t = ILendingPool(lendingPool)
@@ -145,27 +152,41 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         _deposit();
     }
 
+    /* @dev
+     puts the funds to work
+     */
     function _deposit() internal {
         uint256 tBal = IERC20(baseToken).balanceOf(address(this));
 
+        /* @dev
+     calculating the deposit amount from an external library  
+     */
         uint256 lendAmount = LiquiMaths.calculateLend(
             ltv,
             tBal,
             uint256(IERC20Metadata(baseToken).decimals())
         );
 
+        // deposit amount in protocol
         depositAave(lendAmount);
+
+        /* @dev
+     calculating the deposit amount from an external library  
+     */
 
         uint256 borrowTokenB = LiquiMaths.calculateBorrow(
             ltv,
             tBal,
             uint256(IERC20Metadata(baseToken).decimals())
         );
+
+        //converting amount in stable token to tokenb
         uint256 amounTokenB = StableToTokenConversion(borrowTokenB);
 
+        //borrowing above calculated amount from protocol
         borrowAave(amounTokenB);
         uint256 etV = IERC20(tokenB).balanceOf(address(this));
-        _swapV3In(tokenB, baseToken, etV , poolFees);
+        _swapV3In(tokenB, baseToken, etV, poolFees);
         addLiquidity();
     }
 
@@ -183,12 +204,13 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         );
     }
 
+    //Deposit the tokens in rivera vault
     function addLiquidity() internal {
         uint256 tBal = IERC20(baseToken).balanceOf(address(this));
         IRivera(riveraVault).deposit(tBal, address(this));
     }
 
-     function _swapV3In(
+    function _swapV3In(
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
@@ -208,7 +230,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         );
     }
 
-      function _swapV2(address tokenA, address tokenc, uint256 _amount) internal {
+    function _swapV2(address tokenA, address tokenc, uint256 _amount) internal {
         address[] memory path = new address[](2);
         path[0] = tokenA;
         path[1] = tokenc;
@@ -225,14 +247,14 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     function withdraw(uint256 _amount) public nonReentrant {
         onlyVault();
 
-        closeAll();
+        closeAll(); // close all positions
 
+        //transfer withdraw fees to strategy protocol
         uint256 wFee = (_amount * withdrawFee) / withdrawFeeDecimals;
-        IERC20(baseToken).transfer(
-            protocol,
-            wFee
-        );
+        IERC20(baseToken).transfer(protocol, wFee);
         uint256 toTrans = _amount - wFee;
+
+        //calculation for withdraw amount
         uint256 crB = IERC20(baseToken).balanceOf(address(this));
         if (crB > toTrans) {
             IERC20(baseToken).transfer(vault, toTrans);
@@ -242,14 +264,17 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         }
     }
 
+    //repay the debt of lending protocol
     function repayLoan(uint256 _amount) internal {
         ILendingPool(lendingPool).repay(tokenB, _amount, 2, address(this));
     }
 
+    // withdraw deposited fund from the lending protocol
     function withdrawAave(uint256 _amount) internal {
         ILendingPool(lendingPool).withdraw(baseToken, _amount, address(this));
     }
 
+    // function to convert an amount from stable currency to non-stable token
     function StableToTokenConversion(
         uint256 _amount
     ) internal view returns (uint256) {
@@ -258,13 +283,14 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         );
 
         uint256 deciL = IERC20Metadata(tokenB).decimals();
-        uint256 weiU = ((10 ** deciL) * (10**oracleDeci)) / (tokenPrice);
+        uint256 weiU = ((10 ** deciL) * (10 ** oracleDeci)) / (tokenPrice);
         uint256 deci = IERC20Metadata(baseToken).decimals();
         uint256 amountInToken = (weiU * _amount) / 10 ** deci;
 
         return amountInToken;
     }
 
+    // function to convert an amount from not stable token to stable currency
     function tokenToStableConversion(
         uint256 _amount
     ) internal view returns (uint256) {
@@ -274,7 +300,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
         uint256 deciL = IERC20Metadata(tokenB).decimals();
 
-        uint256 weiU = (10 ** deciL * (10**oracleDeci)) / (tokenPrice);
+        uint256 weiU = (10 ** deciL * (10 ** oracleDeci)) / (tokenPrice);
 
         uint256 deci = IERC20Metadata(baseToken).decimals();
 
@@ -282,6 +308,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         return amountInStable;
     }
 
+    // rebalance the whole positions
     function reBalance() public {
         onlyManager();
         harvest();
@@ -289,6 +316,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         _deposit();
     }
 
+    // retire the strategy and transfer the tokens to vault
     function retireStrat() external {
         onlyVault();
         closeAll();
@@ -296,13 +324,14 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         IERC20(baseToken).transfer(vault, totalBal);
     }
 
+    // close all positions from rivera and lending protocol
     function closeAll() internal {
         uint256 rBal = IRivera(riveraVault).balanceOf(address(this));
         uint256 balA = IRivera(riveraVault).convertToAssets(rBal);
         IRivera(riveraVault).withdraw(balA, address(this), address(this));
 
         uint256 balT = IERC20(baseToken).balanceOf(address(this));
-        _swapV3In(baseToken, tokenB, balT,poolFees);
+        _swapV3In(baseToken, tokenB, balT, poolFees);
 
         uint256 debtNow = IERC20(debtToken).balanceOf(address(this));
         repayLoan(debtNow);
@@ -310,9 +339,10 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         uint256 inAmount = IERC20(aToken).balanceOf(address(this));
         withdrawAave(inAmount);
         balT = IERC20(tokenB).balanceOf(address(this));
-        _swapV3In(tokenB, baseToken, balT,poolFees);
+        _swapV3In(tokenB, baseToken, balT, poolFees);
     }
 
+    // collect and redeposit the reward tokens
     function harvest() public whenNotPaused {
         IMultiFeeDistribution(claimC).claim(address(this), forReward);
         (uint256 amount, uint256 penalty) = IMultiFeeDistribution(multiFee)
@@ -326,19 +356,23 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         _deposit();
     }
 
+    // total balance of strategy
     function balanceOf() public view returns (uint256) {
         return balanceRivera() + balanceDeposit() - totalDebt();
     }
 
+    // balance deposited in rivera vault
     function balanceRivera() public view returns (uint256) {
         uint256 balS = IRivera(riveraVault).balanceOf(address(this));
         return IRivera(riveraVault).convertToAssets(balS);
     }
 
+    // balance deposited in lending protocol
     function balanceDeposit() public view returns (uint256) {
         return IERC20(aToken).balanceOf(address(this));
     }
 
+    // current debt
     function totalDebt() public view returns (uint256) {
         uint256 debt = IERC20(debtToken).balanceOf(address(this));
         return tokenToStableConversion(debt);
@@ -401,7 +435,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         IERC20(reward).approve(routerH, type(uint256).max);
         IERC20(reward).approve(lendingPool, type(uint256).max);
         IERC20(reward).approve(riveraVault, type(uint256).max);
-        
+
         IERC20(midToken).approve(router, type(uint256).max);
         IERC20(midToken).approve(routerH, type(uint256).max);
         IERC20(midToken).approve(lendingPool, type(uint256).max);
