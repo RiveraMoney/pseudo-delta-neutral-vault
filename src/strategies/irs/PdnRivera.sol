@@ -59,7 +59,9 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     address public debtToken;
     address public aToken;
     address public reward;
+    uint256 public oracleDeci;
     bytes32 public pId;
+
 
     address public lendingPool;
     address public riveraVault;
@@ -67,7 +69,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
     address public claimC;
     address public multiFee;
     address public routerH;
-    uint24 public fees;
+    uint24 public poolFees;
 
     uint256 public ltv;
     address public protocol;
@@ -98,7 +100,8 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
        PdnFeesParams memory _PdnFeesParams,
        PdnHarvestParams memory _PdnHarvestParams,
        address _midToken,
-       uint24 _fees
+       uint24 _poolFees,
+       uint256 _oracleDeci
     ) AbstractStrategy(_commonAddresses) {
 
         baseToken = _PdnParams.baseToken;
@@ -122,8 +125,10 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         claimC = _PdnHarvestParams.claimC;
         multiFee = _PdnHarvestParams.multiFee;
         routerH = _PdnHarvestParams.routerH;
+
         midToken = _midToken;
-        fees = _fees;
+        poolFees = _poolFees;
+        oracleDeci = _oracleDeci;
 
         DataTypes.ReserveData memory w = ILendingPool(lendingPool)
             .getReserveData(tokenB);
@@ -160,7 +165,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
         borrowAave(amounTokenB);
         uint256 etV = IERC20(tokenB).balanceOf(address(this));
-        _swapV3In(tokenB, baseToken, etV , fees);
+        _swapV3In(tokenB, baseToken, etV , poolFees);
         addLiquidity();
     }
 
@@ -253,7 +258,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         );
 
         uint256 deciL = IERC20Metadata(tokenB).decimals();
-        uint256 weiU = (10 ** deciL * 1e8) / (tokenPrice);
+        uint256 weiU = ((10 ** deciL) * (10**oracleDeci)) / (tokenPrice);
         uint256 deci = IERC20Metadata(baseToken).decimals();
         uint256 amountInToken = (weiU * _amount) / 10 ** deci;
 
@@ -269,7 +274,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
 
         uint256 deciL = IERC20Metadata(tokenB).decimals();
 
-        uint256 weiU = (10 ** deciL * 1e8) / (tokenPrice);
+        uint256 weiU = (10 ** deciL * (10**oracleDeci)) / (tokenPrice);
 
         uint256 deci = IERC20Metadata(baseToken).decimals();
 
@@ -297,7 +302,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         IRivera(riveraVault).withdraw(balA, address(this), address(this));
 
         uint256 balT = IERC20(baseToken).balanceOf(address(this));
-        _swapV3In(baseToken, tokenB, balT,fees);
+        _swapV3In(baseToken, tokenB, balT,poolFees);
 
         uint256 debtNow = IERC20(debtToken).balanceOf(address(this));
         repayLoan(debtNow);
@@ -305,7 +310,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         uint256 inAmount = IERC20(aToken).balanceOf(address(this));
         withdrawAave(inAmount);
         balT = IERC20(tokenB).balanceOf(address(this));
-        _swapV3In(tokenB, baseToken, balT,fees);
+        _swapV3In(tokenB, baseToken, balT,poolFees);
     }
 
     function harvest() public whenNotPaused {
@@ -316,7 +321,7 @@ contract PdnRivera is AbstractStrategy, ReentrancyGuard {
         uint256 lBal = IERC20(reward).balanceOf(address(this));
         _swapV2(reward, midToken, lBal);
         uint256 mBal = IERC20(midToken).balanceOf(address(this));
-        _swapV3In(midToken, baseToken, mBal, fees);
+        _swapV3In(midToken, baseToken, mBal, poolFees);
         _chargeFees(baseToken);
         _deposit();
     }

@@ -56,8 +56,8 @@ contract deployRivera is Script {
 
         RiveraAutoCompoundingVaultV2Public vault = new RiveraAutoCompoundingVaultV2Public(
                 token,
-                "Earth-WZETA-ACE-Vault",
-                "Earth-WZETA-ACE-Vault",
+                "PdnRivera-USDC-WETH-Vault",
+                "PdnRivera-USDC-WETH-Vault",
                 stratUpdateDelay,
                 vaultTvlCap
             );
@@ -102,7 +102,8 @@ contract deployRivera is Script {
            _pdnFeesParams,
            _pdnHarvestParams,
            wMnt,
-           poolFee 
+           poolFee,
+           8
         );
 
         Weth(wMnt).deposit{value: 100 * 1e18}();
