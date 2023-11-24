@@ -52,7 +52,7 @@ struct PdnHarvestParams {
     address routerH;
 }
 
-contract PdnRivera is AbstractStrategy, ReentrancyGuard {
+contract PdnRivera is AbstractStrategy, ReentrancyGuard {   //PdnRiveraVolatileBase
     using SafeERC20 for IERC20;
 
     address public baseToken;
@@ -181,7 +181,7 @@ will change for different protocols
         );
 
         //converting amount in stable token to tokenb
-        uint256 amounTokenB = StableToTokenConversion(borrowTokenB);
+        uint256 amounTokenB = StableToTokenConversion(borrowTokenB ,IERC20Metadata(baseToken).decimals() ,IERC20Metadata(tokenB).decimals(),pId);
 
         //borrowing above calculated amount from protocol
         borrowAave(amounTokenB);
@@ -276,35 +276,40 @@ will change for different protocols
 
     // function to convert an amount from stable currency to non-stable token
     function StableToTokenConversion(
-        uint256 _amount
+        uint256 _amount,
+        uint256 stDeci, //decimals of stable token
+        uint256 tDeci,  // decimals of volatalie token
+        bytes32 _tId  // pyth id of token
     ) internal view returns (uint256) {
         uint256 tokenPrice = uint256(
-            int256(IPyth(pyth).getPriceUnsafe(pId).price)
+            int256(IPyth(pyth).getPriceUnsafe(_tId).price)
         );
 
-        uint256 deciL = IERC20Metadata(tokenB).decimals();
-        uint256 weiU = ((10 ** deciL) * (10 ** oracleDeci)) / (tokenPrice);
-        uint256 deci = IERC20Metadata(baseToken).decimals();
-        uint256 amountInToken = (weiU * _amount) / 10 ** deci;
+        
+        uint256 weiU = ((10 ** tDeci) * (10 ** oracleDeci)) / (tokenPrice);
+        
+        uint256 amountInToken = (weiU * _amount) / 10 ** stDeci;
 
         return amountInToken;
     }
 
     // function to convert an amount from not stable token to stable currency
     function tokenToStableConversion(
-        uint256 _amount
+        uint256 _amount,
+        uint256 stDeci, //decimals of stable token
+        uint256 tDeci,  // decimals of volatalie token
+        bytes32 _tId  // pyth id of token
     ) internal view returns (uint256) {
         uint256 tokenPrice = uint256(
-            int256(IPyth(pyth).getPriceUnsafe(pId).price)
+            int256(IPyth(pyth).getPriceUnsafe(_tId).price)
         );
 
-        uint256 deciL = IERC20Metadata(tokenB).decimals();
+      
 
-        uint256 weiU = (10 ** deciL * (10 ** oracleDeci)) / (tokenPrice);
+        uint256 weiU = (10 ** tDeci * (10 ** oracleDeci)) / (tokenPrice);
 
-        uint256 deci = IERC20Metadata(baseToken).decimals();
 
-        uint256 amountInStable = (_amount * 10 ** deci) / weiU;
+        uint256 amountInStable = (_amount * 10 ** stDeci) / weiU;
         return amountInStable;
     }
 
@@ -375,7 +380,7 @@ will change for different protocols
     // current debt
     function totalDebt() public view returns (uint256) {
         uint256 debt = IERC20(debtToken).balanceOf(address(this));
-        return tokenToStableConversion(debt);
+        return tokenToStableConversion(debt,IERC20Metadata(baseToken).decimals() ,IERC20Metadata(tokenB).decimals(),pId);
     }
 
     function inCaseTokensGetStuck(address _token) external {

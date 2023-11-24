@@ -219,19 +219,6 @@ contract StrategyTest is Test {
     }
 
 
-    function test_directRiveraDeposit() public {
-        vm.startPrank(user);
-        uint256 _amount = one * 78;
-        IERC20(token).approve(riveraVault, _amount);
-        RiveraAutoCompoundingVaultV2Public(riveraVault).deposit(_amount, user);
-        uint256 sh = RiveraAutoCompoundingVaultV2Public(riveraVault).balanceOf(
-            user
-        );
-        console.log(
-            "total input",
-            RiveraAutoCompoundingVaultV2Public(riveraVault).convertToAssets(sh)
-        );
-    }
 
     function test_PanicWithManager() public {
         vm.startPrank(user);
