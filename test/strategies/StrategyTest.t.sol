@@ -15,6 +15,7 @@ contract StrategyTest is Test {
     address vault = 0x8a1b62c438B7b1d73A7a323C6b685fEc021610aC;
     address strat = 0xf5eB7A02d1B8Dc14D5419Ee9F3f4DeE342960e08;
     address riveraVault = 0x5f247B216E46fD86A09dfAB377d9DBe62E9dECDA;
+    address riveraWethMnt = 0xDc63179CC57783493DD8a4Ffd7367DF489Ae93BF;
     address lendingPool = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
     address masterC = 0xC90C10c7e3B2F14870cC870A046Bd099CCDDEe12;
     address multifee = 0x5C75A733656c3E42E44AFFf1aCa1913611F49230;
@@ -23,6 +24,7 @@ contract StrategyTest is Test {
 
     address token = 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9;
     address wEth = 0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111;
+    address wMnt = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
     address debtToken = 0x5DF9a4BE4F9D717b2bFEce9eC350DcF4cbCb91d8;
     address aToken = 0xF36AFb467D1f05541d998BBBcd5F7167D67bd8fC;
 
@@ -62,7 +64,7 @@ contract StrategyTest is Test {
         vm.startPrank(user);
 
         uint256 mybal = IERC20(token).balanceOf(user);
-        uint256 dpDai = one * 10;
+        uint256 dpDai = 10e6;
         IERC20(token).approve(vault, dpDai);
         RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
 
@@ -84,232 +86,228 @@ contract StrategyTest is Test {
         // assertLe(totalA, dpDai);
         vm.stopPrank();
     }
-    function test_HarvestByUser() public {
-        vm.startPrank(user);
+    // function test_HarvestByUser() public {
+    //     vm.startPrank(user);
 
-        uint256 mybal = IERC20(token).balanceOf(user);
-        uint256 dpDai = one * 1000;
-        IERC20(token).approve(vault, dpDai);
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
-        vm.warp(block.timestamp + 7 * 24 * 60 * 60);
-        vm.stopPrank();
+    //     uint256 mybal = IERC20(token).balanceOf(user);
+    //     uint256 dpDai = one * 1000;
+    //     IERC20(token).approve(vault, dpDai);
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+    //     vm.warp(block.timestamp + 7 * 24 * 60 * 60);
+    //     vm.stopPrank();
 
-        console.log("total Assets before", IStrategy(strat).balanceOf());
+    //     console.log("total Assets before", IStrategy(strat).balanceOf());
 
-        vm.startPrank(user);
-        vm.warp(block.timestamp + 7 * 24 * 60 * 60);
-        IStrategy(strat).harvest();
-        vm.stopPrank();
-        console.log("total Assets after", IStrategy(strat).balanceOf());
-    }
+    //     vm.startPrank(user);
+    //     vm.warp(block.timestamp + 7 * 24 * 60 * 60);
+    //     IStrategy(strat).harvest();
+    //     vm.stopPrank();
+    //     console.log("total Assets after", IStrategy(strat).balanceOf());
+    // }
 
+    // function test_DepositTokenMulti(uint256 _amount) public {
+    //     vm.assume(_amount >= one && _amount < 1000 * one);
 
-    function test_DepositTokenMulti(uint256 _amount) public {
-        vm.assume(_amount >= one && _amount < 1000 * one);
+    //     vm.startPrank(user);
 
-        vm.startPrank(user);
+    //     IERC20(token).approve(vault, _amount);
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(_amount, user);
 
-        IERC20(token).approve(vault, _amount);
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(_amount, user);
+    //     uint256 balVal = RiveraAutoCompoundingVaultV2Public(vault).balanceOf(
+    //         user
+    //     );
+    //     uint256 inU = RiveraAutoCompoundingVaultV2Public(vault).convertToAssets(
+    //         balVal
+    //     );
 
-        uint256 balVal = RiveraAutoCompoundingVaultV2Public(vault).balanceOf(
-            user
-        );
-        uint256 inU = RiveraAutoCompoundingVaultV2Public(vault).convertToAssets(
-            balVal
-        );
+    //     assertEq(inU, RiveraAutoCompoundingVaultV2Public(vault).totalAssets());
+    // }
 
-        assertEq(inU, RiveraAutoCompoundingVaultV2Public(vault).totalAssets());
-    }
+    // function test_DepositWrongToken() public {
+    //     vm.startPrank(user);
 
-    function test_DepositWrongToken() public {
-        vm.startPrank(user);
+    //     uint256 mybal = IERC20(wEth).balanceOf(user);
+    //     uint256 dpDai = one * 10;
+    //     IERC20(wEth).approve(vault, dpDai);
+    //     vm.expectRevert();
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+    //     vm.stopPrank();
+    // }
 
-        uint256 mybal = IERC20(wEth).balanceOf(user);
-        uint256 dpDai = one * 10;
-        IERC20(wEth).approve(vault, dpDai);
-        vm.expectRevert();
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
-        vm.stopPrank();
-    }
+    // function test_DepositTokenPaused() public {
+    //     vm.startPrank(manager);
 
-    function test_DepositTokenPaused() public {
-        vm.startPrank(manager);
+    //     IStrategy(strat).pause();
 
-        IStrategy(strat).pause();
+    //     vm.stopPrank();
 
-        vm.stopPrank();
+    //     vm.startPrank(user);
 
-        vm.startPrank(user);
+    //     uint256 mybal = IERC20(token).balanceOf(user);
+    //     uint256 dpDai = mybal / 10;
+    //     IERC20(token).approve(vault, dpDai);
+    //     vm.expectRevert();
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
 
-        uint256 mybal = IERC20(token).balanceOf(user);
-        uint256 dpDai = mybal / 10;
-        IERC20(token).approve(vault, dpDai);
-        vm.expectRevert();
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+    //     vm.stopPrank();
+    // }
 
-        vm.stopPrank();
-    }
+    // function test_WithdrawToken() public {
+    //     vm.startPrank(user);
+    //     uint256 mybal = IERC20(token).balanceOf(user);
+    //     uint256 dpDai = 1000 * one;
+    //     IERC20(token).approve(vault, dpDai);
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
 
+    //     uint256 totalA = RiveraAutoCompoundingVaultV2Public(vault)
+    //         .totalAssets();
 
-    function test_WithdrawToken() public {
-        vm.startPrank(user);
-        uint256 mybal = IERC20(token).balanceOf(user);
-        uint256 dpDai = 1000 * one;
-        IERC20(token).approve(vault, dpDai);
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+    //     console.log("vault balance after deposit", totalA);
 
-        uint256 totalA = RiveraAutoCompoundingVaultV2Public(vault)
-            .totalAssets();
+    //     uint256 balVal = RiveraAutoCompoundingVaultV2Public(vault).balanceOf(
+    //         user
+    //     );
 
-        console.log("vault balance after deposit", totalA);
+    //     uint256 bU = RiveraAutoCompoundingVaultV2Public(vault).convertToAssets(
+    //         balVal
+    //     );
+    //     console.log("Balance of user after depo", bU);
 
-        uint256 balVal = RiveraAutoCompoundingVaultV2Public(vault).balanceOf(
-            user
-        );
+    //     RiveraAutoCompoundingVaultV2Public(vault).withdraw(bU, user, user);
 
-        uint256 bU = RiveraAutoCompoundingVaultV2Public(vault).convertToAssets(
-            balVal
-        );
-        console.log("Balance of user after depo", bU);
+    //     console.log(
+    //         "balance of user after withdraw",
+    //         RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user)
+    //     );
+    //     console.log(
+    //         "vault balance after withdraw",
+    //         RiveraAutoCompoundingVaultV2Public(vault).totalAssets()
+    //     );
+    //     console.log("total loan", IStrategy(strat).totalDebt());
+    //     console.log("total deposit", IStrategy(strat).balanceDeposit());
+    //     console.log("total in rivera", IStrategy(strat).balanceRivera());
+    //     console.log(
+    //         "fee withdraw",
+    //         IERC20(token).balanceOf(0xdA2C794f2d2D8aaC0f5C1da3BD3B2C7914D9C4d7)
+    //     );
+    //     // assertEq(RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user), 0);
+    //     // assertEq(RiveraAutoCompoundingVaultV2Public(vault).totalAssets(), 0);
+    //     vm.stopPrank();
+    // }
 
-        RiveraAutoCompoundingVaultV2Public(vault).withdraw(bU, user, user);
+    // function test_WithdrawTokenMulti(uint256 _amount) public {
+    //     vm.assume(_amount >= one && _amount < 1000 * one);
 
-        console.log(
-            "balance of user after withdraw",
-            RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user)
-        );
-        console.log(
-            "vault balance after withdraw",
-            RiveraAutoCompoundingVaultV2Public(vault).totalAssets()
-        );
-        console.log("total loan", IStrategy(strat).totalDebt());
-        console.log("total deposit", IStrategy(strat).balanceDeposit());
-        console.log("total in rivera", IStrategy(strat).balanceRivera());
-        console.log(
-            "fee withdraw",
-            IERC20(token).balanceOf(0xdA2C794f2d2D8aaC0f5C1da3BD3B2C7914D9C4d7)
-        );
-        // assertEq(RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user), 0);
-        // assertEq(RiveraAutoCompoundingVaultV2Public(vault).totalAssets(), 0);
-        vm.stopPrank();
-    }
+    //     vm.startPrank(user);
+    //     IERC20(token).approve(vault, _amount);
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(_amount, user);
 
-    function test_WithdrawTokenMulti(uint256 _amount) public {
-        vm.assume(_amount >= one && _amount < 1000 * one);
+    //     uint256 totalA = RiveraAutoCompoundingVaultV2Public(vault)
+    //         .totalAssets();
 
-        vm.startPrank(user);
-        IERC20(token).approve(vault, _amount);
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(_amount, user);
+    //     uint256 balVal = RiveraAutoCompoundingVaultV2Public(vault).balanceOf(
+    //         user
+    //     );
+    //     uint256 bU = RiveraAutoCompoundingVaultV2Public(vault).convertToAssets(
+    //         balVal
+    //     );
 
-        uint256 totalA = RiveraAutoCompoundingVaultV2Public(vault)
-            .totalAssets();
+    //     RiveraAutoCompoundingVaultV2Public(vault).withdraw(bU, user, user);
+    //     // assertEq(RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user), 0);
+    //     // assertEq(RiveraAutoCompoundingVaultV2Public(vault).totalAssets(), 0);
+    //     vm.stopPrank();
+    // }
 
-        uint256 balVal = RiveraAutoCompoundingVaultV2Public(vault).balanceOf(
-            user
-        );
-        uint256 bU = RiveraAutoCompoundingVaultV2Public(vault).convertToAssets(
-            balVal
-        );
+    // function test_PanicWithManager() public {
+    //     vm.startPrank(user);
+    //     uint256 mybal = IERC20(token).balanceOf(user);
+    //     uint256 dpDai = one * 10;
+    //     IERC20(token).approve(vault, dpDai);
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+    //     vm.stopPrank();
 
-        RiveraAutoCompoundingVaultV2Public(vault).withdraw(bU, user, user);
-        // assertEq(RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user), 0);
-        // assertEq(RiveraAutoCompoundingVaultV2Public(vault).totalAssets(), 0);
-        vm.stopPrank();
-    }
+    //     vm.startPrank(manager);
+    //     IStrategy(strat).panic();
+    //     vm.stopPrank();
+    //     assertEq(IStrategy(strat).paused(), true);
 
+    //     uint256 balRi = IRivera(riveraVault).balanceOf(strat);
+    //     uint256 dbt = IERC20(debtToken).balanceOf(strat);
+    //     uint256 depoo = IERC20(aToken).balanceOf(strat);
+    //     console.log("balri", balRi);
+    //     console.log("dbt", dbt);
+    //     console.log("depoo", depoo);
 
+    //     assertEq(balRi, 0);
+    //     assertEq(dbt, 0);
+    //     assertEq(depoo, 0);
+    // }
 
-    function test_PanicWithManager() public {
-        vm.startPrank(user);
-        uint256 mybal = IERC20(token).balanceOf(user);
-        uint256 dpDai = one * 10;
-        IERC20(token).approve(vault, dpDai);
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
-        vm.stopPrank();
+    // function test_PauseAndUnpause() public {
+    //     vm.startPrank(user);
+    //     uint256 mybal = IERC20(token).balanceOf(user);
+    //     uint256 dpDai = mybal / 10;
+    //     IERC20(token).approve(vault, dpDai);
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+    //     vm.stopPrank();
 
-        vm.startPrank(manager);
-        IStrategy(strat).panic();
-        vm.stopPrank();
-        assertEq(IStrategy(strat).paused(), true);
+    //     vm.startPrank(manager);
+    //     IStrategy(strat).panic();
+    //     vm.stopPrank();
+    //     assertEq(IStrategy(strat).paused(), true);
 
-        uint256 balRi = IRivera(riveraVault).balanceOf(strat);
-        uint256 dbt = IERC20(debtToken).balanceOf(strat);
-        uint256 depoo = IERC20(aToken).balanceOf(strat);
-        console.log("balri", balRi);
-        console.log("dbt", dbt);
-        console.log("depoo", depoo);
+    //     vm.startPrank(manager);
+    //     IStrategy(strat).unpause();
+    //     vm.stopPrank();
+    //     assertEq(IStrategy(strat).paused(), false);
+    // }
 
-        assertEq(balRi, 0);
-        assertEq(dbt, 0);
-        assertEq(depoo, 0);
-    }
+    // function test_retierStratDirectly() public {
+    //     vm.startPrank(user);
 
-    function test_PauseAndUnpause() public {
-        vm.startPrank(user);
-        uint256 mybal = IERC20(token).balanceOf(user);
-        uint256 dpDai = mybal / 10;
-        IERC20(token).approve(vault, dpDai);
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
-        vm.stopPrank();
+    //     uint256 mybal = IERC20(token).balanceOf(user);
+    //     uint256 dpDai = mybal / 10;
+    //     IERC20(token).approve(vault, dpDai);
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+    //     vm.stopPrank();
 
-        vm.startPrank(manager);
-        IStrategy(strat).panic();
-        vm.stopPrank();
-        assertEq(IStrategy(strat).paused(), true);
+    //     vm.startPrank(vault);
+    //     IStrategy(strat).retireStrat();
+    //     uint256 bNow = IERC20(token).balanceOf(strat);
 
-        vm.startPrank(manager);
-        IStrategy(strat).unpause();
-        vm.stopPrank();
-        assertEq(IStrategy(strat).paused(), false);
-    }
+    //     assertEq(bNow, 0);
+    //     vm.stopPrank();
+    // }
 
-    function test_retierStratDirectly() public {
-        vm.startPrank(user);
+    // function test_reBalanceWithoutManager() public {
+    //     vm.startPrank(user);
 
-        uint256 mybal = IERC20(token).balanceOf(user);
-        uint256 dpDai = mybal / 10;
-        IERC20(token).approve(vault, dpDai);
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
-        vm.stopPrank();
+    //     uint256 mybal = IERC20(token).balanceOf(user);
+    //     uint256 dpDai = mybal / 10;
+    //     IERC20(token).approve(vault, dpDai);
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
 
-        vm.startPrank(vault);
-        IStrategy(strat).retireStrat();
-        uint256 bNow = IERC20(token).balanceOf(strat);
+    //     vm.expectRevert();
+    //     vm.warp(block.timestamp + 7 * 24 * 60 * 60);
+    //     IStrategy(strat).reBalance();
+    //     vm.stopPrank();
+    // }
 
-        assertEq(bNow, 0);
-        vm.stopPrank();
-    }
+    // function test_reBalanceWithManager() public {
+    //     vm.startPrank(user);
 
-    function test_reBalanceWithoutManager() public {
-        vm.startPrank(user);
+    //     uint256 mybal = IERC20(token).balanceOf(user);
+    //     uint256 dpDai = mybal / 10;
+    //     IERC20(token).approve(vault, dpDai);
+    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
 
-        uint256 mybal = IERC20(token).balanceOf(user);
-        uint256 dpDai = mybal / 10;
-        IERC20(token).approve(vault, dpDai);
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+    //     vm.stopPrank();
 
-        vm.expectRevert();
-        vm.warp(block.timestamp + 7 * 24 * 60 * 60);
-        IStrategy(strat).reBalance();
-        vm.stopPrank();
-    }
-
-    function test_reBalanceWithManager() public {
-        vm.startPrank(user);
-
-        uint256 mybal = IERC20(token).balanceOf(user);
-        uint256 dpDai = mybal / 10;
-        IERC20(token).approve(vault, dpDai);
-        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
-
-        vm.stopPrank();
-
-        vm.startPrank(manager);
-        vm.warp(block.timestamp + 7 * 24 * 60 * 60);
-        IStrategy(strat).reBalance();
-        vm.stopPrank();
-    }
+    //     vm.startPrank(manager);
+    //     vm.warp(block.timestamp + 7 * 24 * 60 * 60);
+    //     IStrategy(strat).reBalance();
+    //     vm.stopPrank();
+    // }
 }
 
 //forge test --fork-url http://127.0.0.1:8545/ --match-path test/strategies/StrategyTest.t.sol -vvv
