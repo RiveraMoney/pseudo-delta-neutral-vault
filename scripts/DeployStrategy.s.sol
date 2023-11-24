@@ -70,6 +70,8 @@ contract deployRivera is Script {
         PdnParams memory _pdnParams = PdnParams(
         token, 
         wEth,
+        aToken,
+        debtToken,
         lendingPool,
         riveraVault,
         pyth,

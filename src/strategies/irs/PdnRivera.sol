@@ -25,6 +25,8 @@ import "../utils/StringUtils.sol";
 struct PdnParams {
     address baseToken;
     address tokenB;
+    address aToken;
+    address debtToken;
     address lendingPool;
     address riveraVault;
     address pyth;
@@ -110,6 +112,8 @@ will change for different protocols
     ) AbstractStrategy(_commonAddresses) {
         baseToken = _PdnParams.baseToken;
         tokenB = _PdnParams.tokenB;
+        aToken = _PdnParams.aToken;
+        debtToken = _PdnParams.debtToken;
         lendingPool = _PdnParams.lendingPool;
         riveraVault = _PdnParams.riveraVault;
         pyth = _PdnParams.pyth;
@@ -134,15 +138,9 @@ will change for different protocols
         poolFees = _poolFees;
         oracleDeci = _oracleDeci;
 
-        /* @dev
-    Fetching both aToken address and debt token address from protocol
-    */
-        DataTypes.ReserveData memory w = ILendingPool(lendingPool)
-            .getReserveData(tokenB);
-        DataTypes.ReserveData memory t = ILendingPool(lendingPool)
-            .getReserveData(baseToken);
-        aToken = t.aTokenAddress;
-        debtToken = w.variableDebtTokenAddress;
+  
+       
+  
 
         _giveAllowances();
     }
