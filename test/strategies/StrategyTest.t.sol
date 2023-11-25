@@ -63,7 +63,7 @@ contract StrategyTest is Test {
     function test_DepositTokenNotPaused() public {
         vm.startPrank(user);
 
-        uint256 mybal = IERC20(token).balanceOf(user);
+      
         uint256 dpDai = 10e6;
         IERC20(token).approve(vault, dpDai);
         RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
@@ -81,29 +81,33 @@ contract StrategyTest is Test {
         console.log("Balance of Strategy", totalA);
         console.log("Balance of user in Vault", balVal);
         console.log("user share to assets", shaToAsset);
+        console.log("Total debt",IStrategy(strat).totalDebt());
+        console.log("Total deposit",IStrategy(strat).balanceDeposit());
+        console.log("Total in rivera",IStrategy(strat).balanceRivera());
+        console.log("Total balance",IStrategy(strat).balanceOf());
 
         // assertEq(totalA, shaToAsset);
         // assertLe(totalA, dpDai);
         vm.stopPrank();
     }
-    // function test_HarvestByUser() public {
-    //     vm.startPrank(user);
+    function test_HarvestByUser() public {
+        vm.startPrank(user);
 
-    //     uint256 mybal = IERC20(token).balanceOf(user);
-    //     uint256 dpDai = one * 1000;
-    //     IERC20(token).approve(vault, dpDai);
-    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
-    //     vm.warp(block.timestamp + 7 * 24 * 60 * 60);
-    //     vm.stopPrank();
+        uint256 mybal = IERC20(token).balanceOf(user);
+        uint256 dpDai = 10e6;
+        IERC20(token).approve(vault, dpDai);
+        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+        vm.warp(block.timestamp + 7 * 24 * 60 * 60);
+        vm.stopPrank();
 
-    //     console.log("total Assets before", IStrategy(strat).balanceOf());
+        console.log("total Assets before", IStrategy(strat).balanceOf());
 
-    //     vm.startPrank(user);
-    //     vm.warp(block.timestamp + 7 * 24 * 60 * 60);
-    //     IStrategy(strat).harvest();
-    //     vm.stopPrank();
-    //     console.log("total Assets after", IStrategy(strat).balanceOf());
-    // }
+        vm.startPrank(user);
+        vm.warp(block.timestamp + 7 * 24 * 60 * 60);
+        IStrategy(strat).harvest();
+        vm.stopPrank();
+        console.log("total Assets after", IStrategy(strat).balanceOf());
+    }
 
     // function test_DepositTokenMulti(uint256 _amount) public {
     //     vm.assume(_amount >= one && _amount < 1000 * one);

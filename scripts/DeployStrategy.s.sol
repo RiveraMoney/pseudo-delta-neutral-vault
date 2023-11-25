@@ -61,9 +61,9 @@ contract deployRivera is Script {
         vm.startBroadcast(privateKey);
 
         RiveraAutoCompoundingVaultV2Public vault = new RiveraAutoCompoundingVaultV2Public(
-                usdc,
-                "PdnRivera-USDC-WETH-Vault",
-                "PdnRivera-USDC-WETH-Vault",
+                wEth,
+                "PdnRivera-WETH-WMNT-Vault",
+                "PdnRivera-WETH-WMNT-Vault",
                 stratUpdateDelay,
                 vaultTvlCap
             );
@@ -74,13 +74,13 @@ contract deployRivera is Script {
         );
 
         PdnParams memory _pdnParams = PdnParams(
-            usdc,
             wEth,
+            wMnt,
             lendingPool,
-            riveraVault,
+            riveraWethMnt,
             pyth,
-            pIusdc,
             pId,
+            pIB,
             ltv
         );
 
