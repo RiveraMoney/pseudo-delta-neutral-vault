@@ -446,11 +446,23 @@ will change for different protocols
 
     function _removeAllowances() internal virtual {
         IERC20(baseToken).safeApprove(router, 0);
+        IERC20(baseToken).approve(routerH, 0);
         IERC20(baseToken).safeApprove(lendingPool, 0);
         IERC20(baseToken).safeApprove(riveraVault, 0);
 
         IERC20(tokenB).safeApprove(router, 0);
+        IERC20(tokenB).approve(routerH, 0);
         IERC20(tokenB).safeApprove(lendingPool, 0);
         IERC20(tokenB).safeApprove(riveraVault, 0);
+
+        IERC20(reward).approve(router, 0);
+        IERC20(reward).approve(routerH, 0);
+        IERC20(reward).approve(lendingPool, 0);
+        IERC20(reward).approve(riveraVault, 0);
+
+        IERC20(midToken).approve(router, 0);
+        IERC20(midToken).approve(routerH, 0);
+        IERC20(midToken).approve(lendingPool, 0);
+        IERC20(midToken).approve(riveraVault, 0);
     }
 }
