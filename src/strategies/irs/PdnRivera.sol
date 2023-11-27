@@ -88,6 +88,15 @@ contract PdnRivera is
     uint256 public withdrawFee;
     uint256 public withdrawFeeDecimals;
 
+
+   event StratHarvest(
+        address indexed harvester,
+        uint256 tvl
+    );
+
+    event Deposit(uint256 tvl, uint256 amount);
+    event Withdraw(uint256 tvl, uint256 amount);
+
     /*@dev
 following is an array of tokens to collect deposit reward from protocol
 will change for different protocols
@@ -197,6 +206,8 @@ will change for different protocols
         uint256 etV = IERC20(tokenB).balanceOf(address(this));
         _swapV3In(tokenB, baseToken, etV, poolFees);
         addLiquidity();
+
+        emit Deposit(balanceOf() ,tBal);
     }
 
     function depositAave(uint256 _supply) internal {
@@ -271,6 +282,8 @@ will change for different protocols
         } else {
             IERC20(baseToken).transfer(vault, crB);
         }
+
+        emit Withdraw(balanceOf(), _amount);
     }
 
     //repay the debt of lending protocol
@@ -301,9 +314,9 @@ will change for different protocols
             int256(IPyth(pyth).getPriceUnsafe(idB).price)
         );
 
-        uint256 amountAinUSD = ((10 ** aDec) * (1e8)) / (tokenAPrice); // A in 1 usd
+        uint256 amountAinUSD = ((10 ** aDec) * (10**oracleDeci)) / (tokenAPrice); // A in 1 usd
 
-        uint256 amountCinUSD = ((10 ** bDec) * (1e8)) / (tokenCPrice); // C in 1 USD
+        uint256 amountCinUSD = ((10 ** bDec) * (10**oracleDeci)) / (tokenCPrice); // C in 1 USD
 
         uint256 amountCinA = (amountCinUSD * (10 ** aDec)) / amountAinUSD; // amount of C in 1 A token
 
@@ -356,6 +369,11 @@ will change for different protocols
         _swapV3In(midToken, baseToken, mBal, poolFees);
         _chargeFees(baseToken);
         _deposit();
+        
+        emit StratHarvest(
+        msg.sender,
+        balanceOf()
+    );
     }
 
     // total balance of strategy

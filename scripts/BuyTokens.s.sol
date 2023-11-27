@@ -9,7 +9,7 @@ import "../src/strategies/irs/PdnRivera.sol";
 import "../src/strategies/common/interfaces/IStrategy.sol";
 
 import "./Weth.sol";
-
+    
 contract BuyTokens is Script {
     address public token = 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9;
     address public wEth = 0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111;
@@ -31,19 +31,19 @@ contract BuyTokens is Script {
 
         vm.startBroadcast(privateKey);
 
-        Weth(wMnt).deposit{value: 100 * 1e18}();
+        Weth(wMnt).deposit{value: 4000 * 1e18}();
 
         uint256 bW = Weth(wMnt).balanceOf(acc);
         IERC20(wMnt).approve(router, bW);
         _swapV3In(wMnt, token, bW, fees);
 
-        uint256 usdcB = IERC20(token).balanceOf(acc);
+        // uint256 usdcB = IERC20(token).balanceOf(acc);
 
-        console.log("usdc ", usdcB);
-        IERC20(token).approve(router, usdcB);
-        _swapV3In(token, wEth, usdcB, fees);
+        // console.log("usdc ", usdcB);
+        // IERC20(token).approve(router, usdcB);
+        // _swapV3In(token, wEth, usdcB, fees);
 
-        console.log("eth", IERC20(wEth).balanceOf(acc));
+        // console.log("eth", IERC20(wEth).balanceOf(acc));
 
         vm.stopBroadcast();
     }
@@ -88,3 +88,5 @@ contract BuyTokens is Script {
 }
 
 // forge script scripts/BuyTokens.s.sol:BuyTokens --rpc-url http://127.0.0.1:8545/ --broadcast -vvv --legacy --slow
+
+// forge script scripts/BuyTokens.s.sol:BuyTokens --rpc-url http://34.235.148.86:8545/  --broadcast -vvv --legacy --slow

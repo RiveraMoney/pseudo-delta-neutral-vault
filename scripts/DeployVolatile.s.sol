@@ -128,9 +128,9 @@ contract deployVolatile is Script {
 
 // anvil --fork-url https://rpc.mantle.xyz --mnemonic "disorder pretty oblige witness close face food stumble name material couch planet"
 
-/*  ParentVault
+/* ParentVault(PdnRivera-USDC-WETH-Vault)
   0x8a1b62c438B7b1d73A7a323C6b685fEc021610aC
-  ParentStrategy
+  ParentStrategy(PdnRivera-USDC-WETH-Vault)
   0xf5eB7A02d1B8Dc14D5419Ee9F3f4DeE342960e08 */
 
-// forge script scripts/DeployStrategy.s.sol:deployRivera --rpc-url http://13.232.85.53:8545/ --broadcast -vvv --legacy --slow
+// forge script scripts/DeployVolatile.s.sol:deployVolatile --rpc-url http://34.235.148.86:8545/ --broadcast -vvv --legacy --slow

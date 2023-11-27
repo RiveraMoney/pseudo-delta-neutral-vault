@@ -13,7 +13,9 @@ import "../../src/libs/LiquiMaths.sol";
 
 contract StrategyTest is Test {
     address vault = 0x8a1b62c438B7b1d73A7a323C6b685fEc021610aC;
+    address vaultV = 0x821F88928C950F638a94b74cD44A1b676D51a310;
     address strat = 0xf5eB7A02d1B8Dc14D5419Ee9F3f4DeE342960e08;
+    address stratV = 0xb642f6F85fc68876700FB2699963611632AD8644 ;
     address riveraVault = 0x5f247B216E46fD86A09dfAB377d9DBe62E9dECDA;
     address riveraWethMnt = 0xDc63179CC57783493DD8a4Ffd7367DF489Ae93BF;
     address lendingPool = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
@@ -156,48 +158,48 @@ contract StrategyTest is Test {
     //     vm.stopPrank();
     // }
 
-    // function test_WithdrawToken() public {
-    //     vm.startPrank(user);
-    //     uint256 mybal = IERC20(token).balanceOf(user);
-    //     uint256 dpDai = 1000 * one;
-    //     IERC20(token).approve(vault, dpDai);
-    //     RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
+    function test_WithdrawToken() public {
+        vm.startPrank(user);
+        uint256 mybal = IERC20(token).balanceOf(user);
+        uint256 dpDai = 10e6;
+        IERC20(token).approve(vault, dpDai);
+        RiveraAutoCompoundingVaultV2Public(vault).deposit(dpDai, user);
 
-    //     uint256 totalA = RiveraAutoCompoundingVaultV2Public(vault)
-    //         .totalAssets();
+        uint256 totalA = RiveraAutoCompoundingVaultV2Public(vault)
+            .totalAssets();
 
-    //     console.log("vault balance after deposit", totalA);
+        console.log("vault balance after deposit", totalA);
 
-    //     uint256 balVal = RiveraAutoCompoundingVaultV2Public(vault).balanceOf(
-    //         user
-    //     );
+        uint256 balVal = RiveraAutoCompoundingVaultV2Public(vault).balanceOf(
+            user
+        );
 
-    //     uint256 bU = RiveraAutoCompoundingVaultV2Public(vault).convertToAssets(
-    //         balVal
-    //     );
-    //     console.log("Balance of user after depo", bU);
+        uint256 bU = RiveraAutoCompoundingVaultV2Public(vault).convertToAssets(
+            balVal
+        );
+        console.log("Balance of user after depo", bU);
 
-    //     RiveraAutoCompoundingVaultV2Public(vault).withdraw(bU, user, user);
+        RiveraAutoCompoundingVaultV2Public(vault).withdraw(bU, user, user);
 
-    //     console.log(
-    //         "balance of user after withdraw",
-    //         RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user)
-    //     );
-    //     console.log(
-    //         "vault balance after withdraw",
-    //         RiveraAutoCompoundingVaultV2Public(vault).totalAssets()
-    //     );
-    //     console.log("total loan", IStrategy(strat).totalDebt());
-    //     console.log("total deposit", IStrategy(strat).balanceDeposit());
-    //     console.log("total in rivera", IStrategy(strat).balanceRivera());
-    //     console.log(
-    //         "fee withdraw",
-    //         IERC20(token).balanceOf(0xdA2C794f2d2D8aaC0f5C1da3BD3B2C7914D9C4d7)
-    //     );
-    //     // assertEq(RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user), 0);
-    //     // assertEq(RiveraAutoCompoundingVaultV2Public(vault).totalAssets(), 0);
-    //     vm.stopPrank();
-    // }
+        console.log(
+            "balance of user after withdraw",
+            RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user)
+        );
+        console.log(
+            "vault balance after withdraw",
+            RiveraAutoCompoundingVaultV2Public(vault).totalAssets()
+        );
+        console.log("total loan", IStrategy(strat).totalDebt());
+        console.log("total deposit", IStrategy(strat).balanceDeposit());
+        console.log("total in rivera", IStrategy(strat).balanceRivera());
+        console.log(
+            "fee withdraw",
+            IERC20(wEth).balanceOf(0xdA2C794f2d2D8aaC0f5C1da3BD3B2C7914D9C4d7)
+        );
+        // assertEq(RiveraAutoCompoundingVaultV2Public(vault).balanceOf(user), 0);
+        // assertEq(RiveraAutoCompoundingVaultV2Public(vault).totalAssets(), 0);
+        vm.stopPrank();
+    }
 
     // function test_WithdrawTokenMulti(uint256 _amount) public {
     //     vm.assume(_amount >= one && _amount < 1000 * one);
@@ -314,4 +316,4 @@ contract StrategyTest is Test {
     // }
 }
 
-//forge test --fork-url http://127.0.0.1:8545/ --match-path test/strategies/StrategyTest.t.sol -vvv
+//forge test --fork-url http://34.235.148.86:8545/ --match-path test/strategies/StrategyTest.t.sol -vvv
