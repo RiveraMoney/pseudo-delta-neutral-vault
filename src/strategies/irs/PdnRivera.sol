@@ -12,7 +12,7 @@ import "./OracleInterface/IPyth.sol";
 import "./interfaces/DataTypes.sol";
 import "./interfaces/IV3SwapRouter.sol";
 
-
+import "./interfaces/IPool.sol";
 import "./interfaces/IRivera.sol";
 import "../../libs/LiquiMaths.sol";
 
@@ -44,13 +44,6 @@ struct PdnFeesParams {
 }
 
 //Protocol dependent parameters for harvest function
-struct PdnHarvestParams {
-    address reward;
-    address midToken;
-    address claimC;
-    address multiFee;
-    address routerV2;
-}
 
 contract PdnRivera is
     AbstractStrategy,
@@ -71,8 +64,6 @@ contract PdnRivera is
     address public lendingPool;
     address public riveraVault;
     address public pyth; //oracle contract address to get price
-    address public claimC; // contract to collect reward tokens
-    address public multiFee; // contract to withdraw reward tokens
     address public routerV2; //secondary router incase not enough liquidity in v3 pools
     uint24 public poolFees; //v3 pool fees for v3 swap
 
@@ -101,7 +92,6 @@ will change for different protocols
         CommonAddresses memory _commonAddresses,
         PdnParams memory _PdnParams,
         PdnFeesParams memory _PdnFeesParams,
-        PdnHarvestParams memory _PdnHarvestParams,
         uint24 _poolFees,
         uint256 _oracleDeci
     ) AbstractStrategy(_commonAddresses) {
@@ -123,18 +113,13 @@ will change for different protocols
         withdrawFee = _PdnFeesParams.withdrawFee;
         withdrawFeeDecimals = _PdnFeesParams.withdrawFeeDecimals;
 
-        reward = _PdnHarvestParams.reward;
-        claimC = _PdnHarvestParams.claimC;
-        multiFee = _PdnHarvestParams.multiFee;
-        routerV2 = _PdnHarvestParams.routerV2;
-        midToken = _PdnHarvestParams.midToken;
 
-        DataTypes.ReserveData memory w = ILendingPool(lendingPool)
-            .getReserveData(tokenB);
-        DataTypes.ReserveData memory t = ILendingPool(lendingPool)
-            .getReserveData(baseToken);
-        aToken = t.aTokenAddress;
-        debtToken = w.variableDebtTokenAddress;
+        // DataTypes.ReserveData memory w = ILendingPool(lendingPool)
+        //     .getReserveData(tokenB);
+        // DataTypes.ReserveData memory t = ILendingPool(lendingPool)
+        //     .getReserveData(baseToken);
+        // aToken = t.aTokenAddress;
+        // debtToken = w.variableDebtTokenAddress;
 
         poolFees = _poolFees;
         oracleDeci = _oracleDeci;
@@ -194,17 +179,17 @@ will change for different protocols
     }
 
     function depositAave(uint256 _supply) internal {
-        ILendingPool(lendingPool).deposit(baseToken, _supply, address(this), 0);
+        // ILendingPool(lendingPool).deposit(baseToken, _supply, address(this), 0);
     }
 
     function borrowAave(uint256 _borrowAmount) internal {
-        ILendingPool(lendingPool).borrow(
-            tokenB,
-            _borrowAmount,
-            2,
-            0,
-            address(this)
-        );
+        // ILendingPool(lendingPool).borrow(
+        //     tokenB,
+        //     _borrowAmount,
+        //     2,
+        //     0,
+        //     address(this)
+        // );
     }
 
     //Deposit the tokens in rivera vault
@@ -271,12 +256,12 @@ will change for different protocols
 
     //repay the debt of lending protocol
     function repayLoan(uint256 _amount) internal {
-        ILendingPool(lendingPool).repay(tokenB, _amount, 2, address(this));
+        // ILendingPool(lendingPool).repay(tokenB, _amount, 2, address(this));
     }
 
     // withdraw deposited fund from the lending protocol
     function withdrawAave(uint256 _amount) internal {
-        ILendingPool(lendingPool).withdraw(baseToken, _amount, address(this));
+        // ILendingPool(lendingPool).withdraw(baseToken, _amount, address(this));
     }
 
     function tokenToTokenConversion(
@@ -344,16 +329,6 @@ will change for different protocols
 
     // collect and redeposit the reward tokens
     function harvest() public whenNotPaused {
-        IMultiFeeDistribution(claimC).claim(address(this), forReward);
-        (uint256 amount, uint256 penalty) = IMultiFeeDistribution(multiFee)
-            .withdrawableBalance(address(this));
-        IMultiFeeDistribution(multiFee).withdraw((amount * 99) / 100);
-        uint256 lBal = IERC20(reward).balanceOf(address(this));
-        _swapV2(reward, midToken, lBal);
-        uint256 mBal = IERC20(midToken).balanceOf(address(this));
-        _swapV3In(midToken, baseToken, mBal, poolFees);
-        _chargeFees(baseToken);
-        _deposit();
 
         emit StratHarvest(msg.sender, balanceOf());
     }
@@ -437,11 +412,6 @@ will change for different protocols
         IERC20(reward).approve(routerV2, type(uint256).max);
         IERC20(reward).approve(lendingPool, type(uint256).max);
         IERC20(reward).approve(riveraVault, type(uint256).max);
-
-        IERC20(midToken).approve(router, type(uint256).max);
-        IERC20(midToken).approve(routerV2, type(uint256).max);
-        IERC20(midToken).approve(lendingPool, type(uint256).max);
-        IERC20(midToken).approve(riveraVault, type(uint256).max);
     }
 
     function _removeAllowances() internal virtual {
@@ -459,10 +429,5 @@ will change for different protocols
         IERC20(reward).safeApprove(routerV2, 0);
         IERC20(reward).safeApprove(lendingPool, 0);
         IERC20(reward).safeApprove(riveraVault, 0);
-
-        IERC20(midToken).safeApprove(router, 0);
-        IERC20(midToken).safeApprove(routerV2, 0);
-        IERC20(midToken).safeApprove(lendingPool, 0);
-        IERC20(midToken).safeApprove(riveraVault, 0);
     }
 }
