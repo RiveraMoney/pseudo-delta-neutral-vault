@@ -114,12 +114,12 @@ will change for different protocols
         withdrawFeeDecimals = _PdnFeesParams.withdrawFeeDecimals;
 
 
-        // DataTypes.ReserveData memory w = ILendingPool(lendingPool)
-        //     .getReserveData(tokenB);
-        // DataTypes.ReserveData memory t = ILendingPool(lendingPool)
-        //     .getReserveData(baseToken);
-        // aToken = t.aTokenAddress;
-        // debtToken = w.variableDebtTokenAddress;
+        DataTypes.ReserveData memory w = IPool(lendingPool)
+            .getReserveData(tokenB);
+        DataTypes.ReserveData memory t = IPool(lendingPool)
+            .getReserveData(baseToken);
+        aToken = t.aTokenAddress;
+        debtToken = w.variableDebtTokenAddress;
 
         poolFees = _poolFees;
         oracleDeci = _oracleDeci;
@@ -179,17 +179,17 @@ will change for different protocols
     }
 
     function depositAave(uint256 _supply) internal {
-        // ILendingPool(lendingPool).deposit(baseToken, _supply, address(this), 0);
+        IPool(lendingPool).supply(baseToken, _supply, address(this), 0);
     }
 
     function borrowAave(uint256 _borrowAmount) internal {
-        // ILendingPool(lendingPool).borrow(
-        //     tokenB,
-        //     _borrowAmount,
-        //     2,
-        //     0,
-        //     address(this)
-        // );
+        IPool(lendingPool).borrow(
+            tokenB,
+            _borrowAmount,
+            2,
+            0,
+            address(this)
+        );
     }
 
     //Deposit the tokens in rivera vault
@@ -256,12 +256,12 @@ will change for different protocols
 
     //repay the debt of lending protocol
     function repayLoan(uint256 _amount) internal {
-        // ILendingPool(lendingPool).repay(tokenB, _amount, 2, address(this));
+        IPool(lendingPool).repay(tokenB, _amount, 2, address(this));
     }
 
     // withdraw deposited fund from the lending protocol
     function withdrawAave(uint256 _amount) internal {
-        // ILendingPool(lendingPool).withdraw(baseToken, _amount, address(this));
+        IPool(lendingPool).withdraw(baseToken, _amount, address(this));
     }
 
     function tokenToTokenConversion(
