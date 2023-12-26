@@ -26,7 +26,7 @@ contract deployRivera is Script {
     bytes32 public pIusdc =
         0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a; // usdc
 
-    address public lendingPool = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3; // mantle  main net
+    address public lendingPool = 0x4bbea708F4e48eB0BB15E0041611d27c3c8638Cf; // mantle  main net
     address public riveraVault = 0x5f247B216E46fD86A09dfAB377d9DBe62E9dECDA; //rivera agni mantle
     address public riveraWethMnt = 0xDc63179CC57783493DD8a4Ffd7367DF489Ae93BF;
     address public router = 0x319B69888b0d11cEC22caA5034e25FfFBDc88421; // agnifinance v3
@@ -95,19 +95,11 @@ contract deployRivera is Script {
             withdrawFeeDecimals
         );
 
-        PdnHarvestParams memory _pdnHarvestParams = PdnHarvestParams(
-            lendle,
-            wMnt,
-            masterCh,
-            multiFeeD,
-            routerH
-        );
 
         PdnRivera parentStrategy = new PdnRivera(
             _commonAddresses,
             _pdnParams,
             _pdnFeesParams,
-            _pdnHarvestParams,
             poolFee,
             8
         );

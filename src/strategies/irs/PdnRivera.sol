@@ -399,34 +399,34 @@ will change for different protocols
 
     function _giveAllowances() internal virtual {
         IERC20(baseToken).approve(router, type(uint256).max);
-        IERC20(baseToken).approve(routerV2, type(uint256).max);
+        //IERC20(baseToken).approve(routerV2, type(uint256).max);
         IERC20(baseToken).approve(lendingPool, type(uint256).max);
         IERC20(baseToken).approve(riveraVault, type(uint256).max);
 
         IERC20(tokenB).approve(router, type(uint256).max);
-        IERC20(tokenB).approve(routerV2, type(uint256).max);
+        // IERC20(tokenB).approve(routerV2, type(uint256).max);
         IERC20(tokenB).approve(lendingPool, type(uint256).max);
         IERC20(tokenB).approve(riveraVault, type(uint256).max);
 
         IERC20(reward).approve(router, type(uint256).max);
-        IERC20(reward).approve(routerV2, type(uint256).max);
+        //IERC20(reward).approve(routerV2, type(uint256).max);
         IERC20(reward).approve(lendingPool, type(uint256).max);
         IERC20(reward).approve(riveraVault, type(uint256).max);
     }
 
     function _removeAllowances() internal virtual {
         IERC20(baseToken).safeApprove(router, 0);
-        IERC20(baseToken).safeApprove(routerV2, 0);
+       // IERC20(baseToken).safeApprove(routerV2, 0);
         IERC20(baseToken).safeApprove(lendingPool, 0);
         IERC20(baseToken).safeApprove(riveraVault, 0);
 
         IERC20(tokenB).safeApprove(router, 0);
-        IERC20(tokenB).safeApprove(routerV2, 0);
+        //IERC20(tokenB).safeApprove(routerV2, 0);
         IERC20(tokenB).safeApprove(lendingPool, 0);
         IERC20(tokenB).safeApprove(riveraVault, 0);
 
         IERC20(reward).safeApprove(router, 0);
-        IERC20(reward).safeApprove(routerV2, 0);
+        //IERC20(reward).safeApprove(routerV2, 0);
         IERC20(reward).safeApprove(lendingPool, 0);
         IERC20(reward).safeApprove(riveraVault, 0);
     }
