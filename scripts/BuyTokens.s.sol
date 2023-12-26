@@ -16,6 +16,7 @@ contract BuyTokens is Script {
     address public wMnt = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
     address public midToken = 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE;
     address public router = 0x319B69888b0d11cEC22caA5034e25FfFBDc88421;
+    address public routerF = 0x5989FB161568b9F133eDf5Cf6787f5597762797F;
     uint24 public fees = 500;
 
     // path[0] = wEth;
@@ -36,6 +37,16 @@ contract BuyTokens is Script {
         uint256 bW = Weth(wMnt).balanceOf(acc);
         IERC20(wMnt).approve(router, bW);
         _swapV3In(wMnt, token, bW, fees);
+
+        console.log("USDC:-" , IERC20(token).balanceOf(acc));
+
+        Weth(wMnt).deposit{value: 4000 * 1e18}();
+
+         bW = Weth(wMnt).balanceOf(acc);
+        IERC20(wMnt).approve(router, bW);
+        _swapV3In(wMnt, wEth, bW, fees);
+
+        console.log("wEth:-" , IERC20(wEth).balanceOf(acc));
 
         // uint256 usdcB = IERC20(token).balanceOf(acc);
 
@@ -72,7 +83,7 @@ contract BuyTokens is Script {
         uint256 amountIn,
         uint24 fee
     ) public returns (uint256 amountOut) {
-        amountOut = IV3SwapRouter(router).exactInputSingle(
+        amountOut = IV3SwapRouter(routerF).exactInputSingle(
             IV3SwapRouter.ExactInputSingleParams(
                 tokenIn,
                 tokenOut,
@@ -89,4 +100,4 @@ contract BuyTokens is Script {
 
 // forge script scripts/BuyTokens.s.sol:BuyTokens --rpc-url http://127.0.0.1:8545/ --broadcast -vvv --legacy --slow
 
-// forge script scripts/BuyTokens.s.sol:BuyTokens --rpc-url http://34.235.148.86:8545/  --broadcast -vvv --legacy --slow
+// forge script scripts/BuyTokens.s.sol:BuyTokens --rpc-url https://node.rivera.money/  --broadcast -vvv --legacy --slow

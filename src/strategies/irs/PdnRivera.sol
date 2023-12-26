@@ -12,10 +12,8 @@ import "./OracleInterface/IPyth.sol";
 import "./interfaces/DataTypes.sol";
 import "./interfaces/IV3SwapRouter.sol";
 
-import "./interfaces/ILendingPool.sol";
+
 import "./interfaces/IRivera.sol";
-import "./interfaces/ILendingPoolAddressesProvider.sol";
-import "./interfaces/IMultiFeeDistribution.sol";
 import "../../libs/LiquiMaths.sol";
 
 import "../common/AbstractStrategy.sol";
@@ -51,7 +49,7 @@ struct PdnHarvestParams {
     address midToken;
     address claimC;
     address multiFee;
-    address routerH;
+    address routerV2;
 }
 
 contract PdnRivera is
@@ -75,7 +73,7 @@ contract PdnRivera is
     address public pyth; //oracle contract address to get price
     address public claimC; // contract to collect reward tokens
     address public multiFee; // contract to withdraw reward tokens
-    address public routerH; //secondary router incase not enough liquidity in v3 pools
+    address public routerV2; //secondary router incase not enough liquidity in v3 pools
     uint24 public poolFees; //v3 pool fees for v3 swap
 
     uint256 public ltv;
@@ -88,11 +86,7 @@ contract PdnRivera is
     uint256 public withdrawFee;
     uint256 public withdrawFeeDecimals;
 
-
-   event StratHarvest(
-        address indexed harvester,
-        uint256 tvl
-    );
+    event StratHarvest(address indexed harvester, uint256 tvl);
 
     event Deposit(uint256 tvl, uint256 amount);
     event Withdraw(uint256 tvl, uint256 amount);
@@ -101,18 +95,7 @@ contract PdnRivera is
 following is an array of tokens to collect deposit reward from protocol
 will change for different protocols
   */
-    address[] public forReward = [
-        0xF36AFb467D1f05541d998BBBcd5F7167D67bd8fC,
-        0x334a542b51212b8Bcd6F96EfD718D55A9b7D1c35,
-        0xE71cbaaa6B093FcE66211E6f218780685077D8B5,
-        0xaC3c14071c80819113DF501E1AB767be910d5e5a,
-        0x44CCCBbD7A5A9e2202076ea80C185DA0058f1715,
-        0x42f9F9202D5F4412148662Cf3bC68D704c8E354f,
-        0x787Cb0D29194f0fAcA73884C383CF4d2501bb874,
-        0x5DF9a4BE4F9D717b2bFEce9eC350DcF4cbCb91d8,
-        0x683696523512636B46A826A7e3D1B0658E8e2e1c,
-        0x18d3E4F9951fedcdDD806538857eBED2F5F423B7
-    ];
+
 
     constructor(
         CommonAddresses memory _commonAddresses,
@@ -143,7 +126,7 @@ will change for different protocols
         reward = _PdnHarvestParams.reward;
         claimC = _PdnHarvestParams.claimC;
         multiFee = _PdnHarvestParams.multiFee;
-        routerH = _PdnHarvestParams.routerH;
+        routerV2 = _PdnHarvestParams.routerV2;
         midToken = _PdnHarvestParams.midToken;
 
         DataTypes.ReserveData memory w = ILendingPool(lendingPool)
@@ -207,7 +190,7 @@ will change for different protocols
         _swapV3In(tokenB, baseToken, etV, poolFees);
         addLiquidity();
 
-        emit Deposit(balanceOf() ,tBal);
+        emit Deposit(balanceOf(), tBal);
     }
 
     function depositAave(uint256 _supply) internal {
@@ -255,7 +238,7 @@ will change for different protocols
         path[0] = tokenA;
         path[1] = tokenc;
 
-        IPancakeRouter02(routerH).swapExactTokensForTokens(
+        IPancakeRouter02(routerV2).swapExactTokensForTokens(
             _amount,
             0,
             path,
@@ -314,9 +297,11 @@ will change for different protocols
             int256(IPyth(pyth).getPriceUnsafe(idB).price)
         );
 
-        uint256 amountAinUSD = ((10 ** aDec) * (10**oracleDeci)) / (tokenAPrice); // A in 1 usd
+        uint256 amountAinUSD = ((10 ** aDec) * (10 ** oracleDeci)) /
+            (tokenAPrice); // A in 1 usd
 
-        uint256 amountCinUSD = ((10 ** bDec) * (10**oracleDeci)) / (tokenCPrice); // C in 1 USD
+        uint256 amountCinUSD = ((10 ** bDec) * (10 ** oracleDeci)) /
+            (tokenCPrice); // C in 1 USD
 
         uint256 amountCinA = (amountCinUSD * (10 ** aDec)) / amountAinUSD; // amount of C in 1 A token
 
@@ -369,11 +354,8 @@ will change for different protocols
         _swapV3In(midToken, baseToken, mBal, poolFees);
         _chargeFees(baseToken);
         _deposit();
-        
-        emit StratHarvest(
-        msg.sender,
-        balanceOf()
-    );
+
+        emit StratHarvest(msg.sender, balanceOf());
     }
 
     // total balance of strategy
@@ -442,45 +424,45 @@ will change for different protocols
 
     function _giveAllowances() internal virtual {
         IERC20(baseToken).approve(router, type(uint256).max);
-        IERC20(baseToken).approve(routerH, type(uint256).max);
+        IERC20(baseToken).approve(routerV2, type(uint256).max);
         IERC20(baseToken).approve(lendingPool, type(uint256).max);
         IERC20(baseToken).approve(riveraVault, type(uint256).max);
 
         IERC20(tokenB).approve(router, type(uint256).max);
-        IERC20(tokenB).approve(routerH, type(uint256).max);
+        IERC20(tokenB).approve(routerV2, type(uint256).max);
         IERC20(tokenB).approve(lendingPool, type(uint256).max);
         IERC20(tokenB).approve(riveraVault, type(uint256).max);
 
         IERC20(reward).approve(router, type(uint256).max);
-        IERC20(reward).approve(routerH, type(uint256).max);
+        IERC20(reward).approve(routerV2, type(uint256).max);
         IERC20(reward).approve(lendingPool, type(uint256).max);
         IERC20(reward).approve(riveraVault, type(uint256).max);
 
         IERC20(midToken).approve(router, type(uint256).max);
-        IERC20(midToken).approve(routerH, type(uint256).max);
+        IERC20(midToken).approve(routerV2, type(uint256).max);
         IERC20(midToken).approve(lendingPool, type(uint256).max);
         IERC20(midToken).approve(riveraVault, type(uint256).max);
     }
 
     function _removeAllowances() internal virtual {
         IERC20(baseToken).safeApprove(router, 0);
-        IERC20(baseToken).approve(routerH, 0);
+        IERC20(baseToken).safeApprove(routerV2, 0);
         IERC20(baseToken).safeApprove(lendingPool, 0);
         IERC20(baseToken).safeApprove(riveraVault, 0);
 
         IERC20(tokenB).safeApprove(router, 0);
-        IERC20(tokenB).approve(routerH, 0);
+        IERC20(tokenB).safeApprove(routerV2, 0);
         IERC20(tokenB).safeApprove(lendingPool, 0);
         IERC20(tokenB).safeApprove(riveraVault, 0);
 
-        IERC20(reward).approve(router, 0);
-        IERC20(reward).approve(routerH, 0);
-        IERC20(reward).approve(lendingPool, 0);
-        IERC20(reward).approve(riveraVault, 0);
+        IERC20(reward).safeApprove(router, 0);
+        IERC20(reward).safeApprove(routerV2, 0);
+        IERC20(reward).safeApprove(lendingPool, 0);
+        IERC20(reward).safeApprove(riveraVault, 0);
 
-        IERC20(midToken).approve(router, 0);
-        IERC20(midToken).approve(routerH, 0);
-        IERC20(midToken).approve(lendingPool, 0);
-        IERC20(midToken).approve(riveraVault, 0);
+        IERC20(midToken).safeApprove(router, 0);
+        IERC20(midToken).safeApprove(routerV2, 0);
+        IERC20(midToken).safeApprove(lendingPool, 0);
+        IERC20(midToken).safeApprove(riveraVault, 0);
     }
 }

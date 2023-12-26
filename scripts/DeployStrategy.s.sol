@@ -129,8 +129,8 @@ contract deployRivera is Script {
 // anvil --fork-url https://rpc.mantle.xyz --mnemonic "disorder pretty oblige witness close face food stumble name material couch planet"
 
 /*  ParentVault (PdnRivera-WETH-WMNT-Vault)
-  0x821F88928C950F638a94b74cD44A1b676D51a310
+  0xb642f6F85fc68876700FB2699963611632AD8644
   ParentStrategy(PdnRivera-WETH-WMNT-Vault)
-  0xb642f6F85fc68876700FB2699963611632AD8644 */
+  0xE03AF99e994f1624ed3eB56b642f702D7012e5cF */
 
-// forge script scripts/DeployStrategy.s.sol:deployRivera --rpc-url http://34.235.148.86:8545/ --broadcast -vvv --legacy --slow
+// forge script scripts/DeployStrategy.s.sol:deployRivera --rpc-url https://node.rivera.money/ --broadcast -vvv --legacy --slow

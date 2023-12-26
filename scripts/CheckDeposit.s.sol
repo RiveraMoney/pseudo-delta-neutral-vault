@@ -12,9 +12,9 @@ import "./Weth.sol";
 import "@pancakeswap-v2-exchange-protocol/interfaces/IPancakeRouter02.sol";
 
 contract CheckDeposit is Script {
-    address public vault = 0x8a1b62c438B7b1d73A7a323C6b685fEc021610aC;
+    address public vault = 0xb642f6F85fc68876700FB2699963611632AD8644;
     address public strategy = 0xf5eB7A02d1B8Dc14D5419Ee9F3f4DeE342960e08;
-    address public token = 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9;
+    address public token = 0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111;
 
     function setUp() public {}
 
@@ -23,7 +23,7 @@ contract CheckDeposit is Script {
         address acc = vm.addr(privateKey);
         console.log("Account", acc);
 
-        uint256 dpDai = 1e7;
+        uint256 dpDai = 5e16;
 
         vm.startBroadcast(privateKey);
 
@@ -38,4 +38,4 @@ contract CheckDeposit is Script {
     }
 }
 
-// forge script scripts/CheckDeposit.s.sol:CheckDeposit --rpc-url http://127.0.0.1:8545/ --broadcast -vvv --legacy --slow
+// forge script scripts/CheckDeposit.s.sol:CheckDeposit --rpc-url https://node.rivera.money/ --broadcast -vvv --legacy --slow
