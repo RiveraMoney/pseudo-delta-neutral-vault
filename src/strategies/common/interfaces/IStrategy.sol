@@ -49,6 +49,8 @@ interface IStrategy {
 
     function harvest() external;
 
+    function setData(bytes32[] calldata _baseTokenData , bytes32[] calldata _tokenBData) external;
+
     function managerHarvest() external;
 
     function reBalance() external;

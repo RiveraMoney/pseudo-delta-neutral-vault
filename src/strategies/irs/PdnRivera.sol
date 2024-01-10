@@ -57,6 +57,9 @@ contract PdnRivera is
     address public debtToken;
     address public aToken;
     address public reward; // token we get for depositing tokens
+
+    bytes32[] public baseTokenData; // pyth price data
+    bytes32[] public tokenBData; // pyth price data
     uint256 public oracleDeci; // decimals of oracle price
     bytes32 public pId; // id of a token to get its price from oracle
     bytes32 public pIdB; // id of a tokenB to get its price from oracle
@@ -188,7 +191,8 @@ will change for different protocols
             _borrowAmount,
             2,
             0,
-            address(this)
+            address(this),
+            tokenBData
         );
     }
 
@@ -261,7 +265,7 @@ will change for different protocols
 
     // withdraw deposited fund from the lending protocol
     function withdrawAave(uint256 _amount) internal {
-        IPool(lendingPool).withdraw(baseToken, _amount, address(this));
+        IPool(lendingPool).withdraw(baseToken, _amount, address(this),baseTokenData);
     }
 
     function tokenToTokenConversion(
@@ -325,6 +329,12 @@ will change for different protocols
         withdrawAave(inAmount);
         balT = IERC20(tokenB).balanceOf(address(this));
         _swapV3In(tokenB, baseToken, balT, poolFees);
+    }
+
+    function setData(bytes32[] calldata _baseTokenData , bytes32[] calldata _tokenBData) public {
+       onlyManager();
+     baseTokenData = _baseTokenData;
+     _tokenBData = _tokenBData;
     }
 
     // collect and redeposit the reward tokens
