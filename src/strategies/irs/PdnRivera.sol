@@ -58,7 +58,7 @@ contract PdnRivera is
     address public aToken;
     address public reward; // token we get for depositing tokens
 
-    bytes32[] public assetsData; // pyth price data
+    bytes[] public assetsData; // pyth price data
     uint256 public oracleDeci; // decimals of oracle price
     bytes32 public pId; // id of a token to get its price from oracle
     bytes32 public pIdB; // id of a tokenB to get its price from oracle
@@ -330,8 +330,8 @@ will change for different protocols
         _swapV3In(tokenB, baseToken, balT, poolFees);
     }
 
-    function setData(bytes32[] calldata _assetsData) public {
-       onlyManager();
+    function setData(bytes[] memory _assetsData) public {
+    
        assetsData = _assetsData;
     }
 

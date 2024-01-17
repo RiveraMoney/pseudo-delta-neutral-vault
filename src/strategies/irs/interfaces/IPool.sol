@@ -284,7 +284,7 @@ interface IPool {
    *   different wallet
    * @return The final amount withdrawn
    */
-  function withdraw(address asset, uint256 amount, address to,bytes32[] calldata pythUpdateData) external returns (uint256);
+  function withdraw(address asset, uint256 amount, address to,bytes[] memory pythUpdateData) external returns (uint256);
 
   /**
    * @notice Allows users to borrow a specific `amount` of the reserve underlying asset, provided that the borrower
@@ -307,7 +307,7 @@ interface IPool {
     uint256 interestRateMode,
     uint16 referralCode,
     address onBehalfOf,
-    bytes32[] calldata pythD
+    bytes [] memory pythD
   ) external;
 
   /**
