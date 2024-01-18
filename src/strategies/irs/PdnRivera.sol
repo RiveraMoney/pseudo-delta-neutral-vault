@@ -416,10 +416,10 @@ will change for different protocols
         IERC20(tokenB).approve(lendingPool, type(uint256).max);
         IERC20(tokenB).approve(riveraVault, type(uint256).max);
 
-        IERC20(reward).approve(router, type(uint256).max);
-        //IERC20(reward).approve(routerV2, type(uint256).max);
-        IERC20(reward).approve(lendingPool, type(uint256).max);
-        IERC20(reward).approve(riveraVault, type(uint256).max);
+        // IERC20(reward).approve(router, type(uint256).max);
+        // //IERC20(reward).approve(routerV2, type(uint256).max);
+        // IERC20(reward).approve(lendingPool, type(uint256).max);
+        // IERC20(reward).approve(riveraVault, type(uint256).max);
     }
 
     function _removeAllowances() internal virtual {

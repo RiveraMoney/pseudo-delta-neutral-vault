@@ -7,10 +7,11 @@ import "../src/strategies/common/AbstractStrategy.sol";
 import "../src/vaults/RiveraAutoCompoundingVaultV2Public.sol";
 import "../src/strategies/irs/PdnRivera.sol";
 import "../src/strategies/common/interfaces/IStrategy.sol";
+import "../src/vaults/WrapperVault.sol";
 
 import "./Weth.sol";
 
-contract deployRivera is Script {
+contract deployVolatile is Script {
     address public usdc = 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9; // Usdc mantle Mainnet
     address public wEth = 0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111; //wEth mantle
     address public midToken = 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE; //usdt mantle
@@ -26,7 +27,7 @@ contract deployRivera is Script {
     bytes32 public pIusdc =
         0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a; // usdc
 
-    address public lendingPool = 0x4bbea708F4e48eB0BB15E0041611d27c3c8638Cf; // mantle  main net
+    address public lendingPool = 0x4bbea708F4e48eB0BB15E0041611d27c3c8638Cf; // mantle  main net reax
     address public riveraVault = 0x5f247B216E46fD86A09dfAB377d9DBe62E9dECDA; //rivera agni mantle
     address public riveraWethMnt = 0xDc63179CC57783493DD8a4Ffd7367DF489Ae93BF;
     address public router = 0x319B69888b0d11cEC22caA5034e25FfFBDc88421; // agnifinance v3
@@ -61,9 +62,9 @@ contract deployRivera is Script {
         vm.startBroadcast(privateKey);
 
         RiveraAutoCompoundingVaultV2Public vault = new RiveraAutoCompoundingVaultV2Public(
-                wEth,
-                "PdnRivera-WETH-WMNT-Vault",
-                "PdnRivera-WETH-WMNT-Vault",
+                usdc,
+                "PdnRivera-USDC-WETH-Vault",
+                "PdnRivera-USDC-WETH-Vault",
                 stratUpdateDelay,
                 vaultTvlCap
             );
@@ -74,13 +75,13 @@ contract deployRivera is Script {
         );
 
         PdnParams memory _pdnParams = PdnParams(
+            usdc,
             wEth,
-            wMnt,
             lendingPool,
-            riveraWethMnt,
+            riveraVault,
             pyth,
+            pIusdc,
             pId,
-            pIB,
             ltv
         );
 
@@ -95,6 +96,13 @@ contract deployRivera is Script {
             withdrawFeeDecimals
         );
 
+        // PdnHarvestParams memory _pdnHarvestParams = PdnHarvestParams(
+        //     lendle,
+        //     wMnt,
+        //     masterCh,
+        //     multiFeeD,
+        //     routerH
+        // );
 
         PdnRivera parentStrategy = new PdnRivera(
             _commonAddresses,
@@ -104,27 +112,33 @@ contract deployRivera is Script {
             8
         );
 
-        Weth(wMnt).deposit{value: 100 * 1e18}();
-        uint256 bal = Weth(wMnt).balanceOf(acc);
-        console.log(bal);
+        WrapperVault wrapper = new WrapperVault (address(vault),usdc,address(parentStrategy));
+
+
+       // Weth(wMnt).deposit{value: 100 * 1e18}();
+        //uint256 bal = Weth(wMnt).balanceOf(acc);
+        //console.log(bal);
         vault.init(IStrategy(address(parentStrategy)));
         console.log("ParentVault");
         console2.logAddress(address(vault));
         console.log("ParentStrategy");
         console2.logAddress(address(parentStrategy));
+        console.log("wrapper vault");
+        console2.logAddress(address(wrapper));
         vm.stopBroadcast();
     }
 }
 
-//forge script scripts/DeployStrategy.s.sol:deployRivera --rpc-url http://127.0.0.1:8545/ --broadcast -vvv --legacy --slow
+//forge script scripts/DeployVolatile.s.sol:deployVolatile --rpc-url http://127.0.0.1:8545/ --broadcast -vvv --legacy --slow
 
 // anvil --fork-url https://rpc.mantle.xyz --mnemonic "disorder pretty oblige witness close face food stumble name material couch planet"
 
 /*   Account 0x69605b7A74D967a3DA33A20c1b94031BC6cAF27c
-  100000000000000000000
   ParentVault
-  0x8a1b62c438B7b1d73A7a323C6b685fEc021610aC
+  0xAd751a2AB54B4a11a3cA64cB74a47caC5F4FD093
   ParentStrategy
-  0xf5eB7A02d1B8Dc14D5419Ee9F3f4DeE342960e08 */
+  0x834D29E2433FB99A80AB1491e3CBEb7069af8cbd
+  wrapper vault
+  0x68586Aa0cC05E035C26fc6c380970987b18b572e */
 
-// forge script scripts/DeployStrategy.s.sol:deployRivera --rpc-url https://node.rivera.money/ --broadcast -vvv --legacy --slow
+// forge script scripts/DeployVolatile.s.sol:deployVolatile --rpc-url http://34.235.148.86:8545/ --broadcast -vvv --legacy --slow

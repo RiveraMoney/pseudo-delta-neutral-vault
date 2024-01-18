@@ -49,7 +49,7 @@ interface IStrategy {
 
     function harvest() external;
 
-    function setData(bytes32[] calldata _baseTokenData , bytes32[] calldata _tokenBData) external;
+    function setData(bytes[] memory _pythData) external;
 
     function managerHarvest() external;
 
